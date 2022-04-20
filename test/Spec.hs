@@ -22,9 +22,9 @@ main = hspec $ do
 
   describe "order" $ do
     it "should have an asset" $ do
-        assetOf (Bid BTC (Time 0) (Amount 0) (Price 0)) `shouldBe` BTC
-        assetOf (Bid ETH (Time 0) (Amount 0) (Price 0)) `shouldBe` ETH
-        assetOf (Ask BTC (Time 0) (Amount 0) (Price 0)) `shouldBe` BTC
-        assetOf (Ask ETH (Time 0) (Amount 0) (Price 0)) `shouldBe` ETH
+        assetOf (Order Bid BTC (Time 0) (Amount 0) (Price 0)) `shouldBe` BTC
+        assetOf (Order Bid ETH (Time 0) (Amount 0) (Price 0)) `shouldBe` ETH
+        assetOf (Order Ask BTC (Time 0) (Amount 0) (Price 0)) `shouldBe` BTC
+        assetOf (Order Ask ETH (Time 0) (Amount 0) (Price 0)) `shouldBe` ETH
         
         

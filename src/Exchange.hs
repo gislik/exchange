@@ -47,43 +47,33 @@ newtype Time =
   Time Int
     deriving (Show, Eq)
 
+data Side =
+    Bid 
+  | Ask
+  deriving (Show, Eq)
+
 -- Order
 data Order asset = 
-    Bid asset Time Amount Price
-  | Ask asset Time Amount Price
+  Order {
+      sideOf :: Side
+    , assetOf :: asset
+    , timeOf :: Time
+    , amountOf :: Amount
+    , priceOf :: Price
+    } 
   deriving (Show, Eq)
 
 isBid :: Order asset -> Bool
 isBid order =
-  case order of
-    Bid _ _ _ _ -> True
-    otherwise   -> False
+  case sideOf order of
+    Bid -> True
+    otherwise -> False
 
 isAsk :: Order asset -> Bool
 isAsk order =
-  case order of
-    Ask _ _ _ _ -> True
-    otherwise   -> False
-
-assetOf :: Order asset -> asset
-assetOf (Bid asset _ _ _) = asset
-assetOf (Ask asset _ _ _) = asset
-
-timeOf :: Order asset -> Time
-timeOf (Bid _ time _ _) = time
-timeOf (Ask _ time _ _) = time
-
-amountOf :: Order asset -> Amount
-amountOf (Bid _ _ amount _) = amount
-amountOf (Ask _ _ amount _) = amount
-
-priceOf :: Order asset -> Price
-priceOf (Bid _ _ _ price) = price
-priceOf (Ask _ _ _ price) = price
-
-typeOfOrder :: Order asset -> String
-typeOfOrder (Bid _ _ _ _) = "Bid"
-typeOfOrder (Ask _ _ _ _) = "Ask"
+  case sideOf order of
+    Ask -> True
+    otherwise -> False
 
 compareOrder :: Order asset -> Order asset -> Maybe (Trade asset)
 compareOrder taker maker = 
@@ -104,9 +94,7 @@ matchOrder :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Or
 matchOrder order ts maker = 
   let
     decreaseAmount order amount' = 
-      case order of
-        Bid asset time amount price -> Bid asset time (amount-amount') price
-        Ask asset time amount price -> Ask asset time (amount-amount') price
+        order { amountOf = (amountOf order)-amount' }
     totalTraded = sum $ tradeAmountOf <$> ts
     decreasedOrder = decreaseAmount order totalTraded
   in
@@ -116,7 +104,7 @@ matchOrder order ts maker =
 
 printOrder :: Typeable asset => Order asset -> IO ()
 printOrder order = do
-  putStr $ typeOfOrder order 
+  putStr $ show (sideOf order)
   putStr $ " (" ++ show (priceOf order) ++ ")"
   putStr $ " (" ++ show (amountOf order) ++ ")"
   putStrLn ""
@@ -127,9 +115,7 @@ sumOrderAmount orders =
     order = NonEmpty.head orders
     amount = foldMap amountOf orders
   in
-    case order of
-      Bid asset time _  price -> Bid asset time amount price
-      Ask asset time _  price -> Ask asset time amount price
+    order { amountOf = amount }
 
 groupOrdersBy :: Eq b => (Order asset -> b) -> [Order asset] -> [List.NonEmpty (Order asset)]
 groupOrdersBy f orders = 
@@ -161,21 +147,21 @@ emptyBook :: Book asset
 emptyBook = Book [] []
 
 newOrder :: Order asset -> Book asset -> Book asset
-newOrder order@(Bid _ _ _ _) book = 
+newOrder order book | isBid order = 
   book { bids = insertBy (comparing (Down . priceOf)) order (bids book) }
-newOrder order@(Ask _ _ _ _) book = 
+newOrder order book | isAsk order || otherwise = 
   book { asks = insertBy (comparing priceOf) order (asks book) }
 
 
-bid1 = Bid BTC (Time 0) (Amount 1.0) (Price 1000)
-bid2 = Bid BTC (Time 0) (Amount 0.5) (Price 1100)
-bid3 = Bid BTC (Time 0) (Amount 0.6) (Price 900)
-ask1 = Ask BTC (Time 0) (Amount 0.5) (Price 1500)
-ask2 = Ask BTC (Time 0) (Amount 0.2) (Price 1500)
-ask3 = Ask BTC (Time 0) (Amount 0.1) (Price 1400)
+bid1 = Order Bid BTC (Time 0) (Amount 1.0) (Price 1000)
+bid2 = Order Bid BTC (Time 0) (Amount 0.5) (Price 1100)
+bid3 = Order Bid BTC (Time 0) (Amount 0.6) (Price 900)
+ask1 = Order Ask BTC (Time 0) (Amount 0.5) (Price 1500)
+ask2 = Order Ask BTC (Time 0) (Amount 0.2) (Price 1500)
+ask3 = Order Ask BTC (Time 0) (Amount 0.1) (Price 1400)
 
-bid' = Bid BTC (Time 0) (Amount 0.6) (Price 1500)
-ask' = Ask BTC (Time 0) (Amount 0.6) (Price 1000)
+bid' = Order Bid BTC (Time 0) (Amount 0.6) (Price 1500)
+ask' = Order Ask BTC (Time 0) (Amount 0.6) (Price 1000)
 
 book = foldr newOrder emptyBook [bid1, bid2, ask1, ask2, ask3]
 
