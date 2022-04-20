@@ -19,11 +19,11 @@ import Control.Monad (forM)
 -- Assets
 data ETH = 
   ETH   
-    deriving (Show)
+    deriving (Show, Eq)
 
 data BTC = 
   BTC 
-    deriving (Show)
+    deriving (Show, Eq)
 
 
 -- Amount
@@ -85,6 +85,34 @@ typeOfOrder :: Order asset -> String
 typeOfOrder (Bid _ _ _ _) = "Bid"
 typeOfOrder (Ask _ _ _ _) = "Ask"
 
+compareOrder :: Order asset -> Order asset -> Maybe (Trade asset)
+compareOrder taker maker = 
+  let
+    asset = assetOf taker
+    time = timeOf taker
+    amount = min (amountOf taker) (amountOf maker)
+    price = priceOf maker
+  in
+    if isBid taker && isAsk maker && priceOf taker >= priceOf maker && amount > 0
+      then Just (Trade asset time amount price)
+    else if isAsk taker && isBid maker && priceOf taker <= priceOf maker && amount > 0
+      then Just (Trade asset time amount price)
+    else 
+      Nothing
+
+matchOrder :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Order asset)
+matchOrder order ts maker = 
+  let
+    decreaseAmount order amount' = 
+      case order of
+        Bid asset time amount price -> Bid asset time (amount-amount') price
+        Ask asset time amount price -> Ask asset time (amount-amount') price
+    totalTraded = sum $ tradeAmountOf <$> ts
+    decreasedOrder = decreaseAmount order totalTraded
+  in
+    case compareOrder decreasedOrder maker of
+      Nothing -> (ts, maker)
+      Just td -> (td:ts, decreaseAmount maker (tradeAmountOf td))
 
 printOrder :: Typeable asset => Order asset -> IO ()
 printOrder order = do
@@ -194,32 +222,3 @@ placeOrder order = do
       return ts
 
 
-compareOrder :: Order asset -> Order asset -> Maybe (Trade asset)
-compareOrder taker maker = 
-  let
-    asset = assetOf taker
-    time = timeOf taker
-    amount = min (amountOf taker) (amountOf maker)
-    price = priceOf maker
-  in
-    if isBid taker && isAsk maker && priceOf taker >= priceOf maker && amount > 0
-      then Just (Trade asset time amount price)
-    else if isAsk taker && isBid maker && priceOf taker <= priceOf maker && amount > 0
-      then Just (Trade asset time amount price)
-    else 
-      Nothing
-    
-
-matchOrder :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Order asset)
-matchOrder order ts maker = 
-  let
-    decreaseAmount order amount' = 
-      case order of
-        Bid asset time amount price -> Bid asset time (amount-amount') price
-        Ask asset time amount price -> Ask asset time (amount-amount') price
-    totalTraded = sum $ tradeAmountOf <$> ts
-    decreasedOrder = decreaseAmount order totalTraded
-  in
-    case compareOrder decreasedOrder maker of
-      Nothing -> (ts, maker)
-      Just td -> (td:ts, decreaseAmount maker (tradeAmountOf td))
