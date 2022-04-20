@@ -1,5 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Exchange where 
 
@@ -52,44 +54,91 @@ data Side =
   | Ask
   deriving (Show, Eq)
 
+-- Entry
+class Entry a asset where
+  sideOf   :: a asset -> Side
+  assetOf  :: a asset -> asset
+  timeOf   :: a asset -> Time
+  amountOf :: a asset -> Amount
+  priceOf  :: a asset -> Price
+
+
 -- Trade
 data Trade asset =
-  Trade asset Time Amount Price
-    deriving (Show, Eq)
+  Trade {
+      tradeAssetOf :: asset 
+    , tradeTimeOf :: Time 
+    , tradeAmountOf :: Amount 
+    , tradePriceOf :: Price
+    }
+  deriving (Show, Eq)
 
-tradeAmountOf :: Trade asset -> Amount
-tradeAmountOf (Trade _ _ amount _) = amount
+instance Entry Trade asset where
+  -- sideOf = tradeSideOf
+  sideOf   = const Bid -- TODO: hardcoded
+  assetOf  = tradeAssetOf
+  timeOf   = tradeTimeOf
+  amountOf = tradeAmountOf
+  priceOf  = tradePriceOf
+
 
 -- Order
 data Order asset = 
   Order {
-      sideOf :: Side
-    , assetOf :: asset
-    , timeOf :: Time
-    , amountOf :: Amount
-    , priceOf :: Price
+      orderSideOf :: Side
+    , orderAssetOf :: asset
+    , orderTimeOf :: Time
+    , orderAmountOf :: Amount
+    , orderPriceOf :: Price
     } 
   deriving (Show, Eq)
 
-isBid :: Order asset -> Bool
+instance Entry Order asset where
+  sideOf   = orderSideOf
+  assetOf  = orderAssetOf
+  timeOf   = orderTimeOf
+  amountOf = orderAmountOf
+  priceOf  = orderPriceOf
+
+isBid :: Entry a asset => a asset -> Bool
 isBid order =
   case sideOf order of
-    Bid -> True
+    Bid       -> True
     otherwise -> False
 
-isAsk :: Order asset -> Bool
+isAsk :: Entry a asset => a asset -> Bool
 isAsk order =
   case sideOf order of
-    Ask -> True
+    Ask       -> True
     otherwise -> False
 
-matchOrders :: Order asset -> Order asset -> Maybe (Trade asset)
+newtype Maker asset = 
+  Maker (Order asset)
+
+instance Entry Maker asset where
+  sideOf   (Maker order) = sideOf order
+  assetOf  (Maker order) = assetOf order
+  timeOf   (Maker order) = timeOf order
+  amountOf (Maker order) = amountOf order
+  priceOf  (Maker order) = priceOf order
+
+newtype Taker asset = 
+  Taker (Order asset)
+
+instance Entry Taker asset where
+  sideOf   (Taker order) = sideOf order
+  assetOf  (Taker order) = assetOf order
+  timeOf   (Taker order) = timeOf order
+  amountOf (Taker order) = amountOf order
+  priceOf  (Taker order) = priceOf order
+
+matchOrders :: Maker asset -> Taker asset -> Maybe (Trade asset)
 matchOrders maker taker = 
   let
-    asset = assetOf taker
-    time = timeOf taker
+    asset  = assetOf taker
+    time   = timeOf taker
     amount = min (amountOf taker) (amountOf maker)
-    price = priceOf maker
+    price  = priceOf maker
   in
     if isBid taker && isAsk maker && priceOf taker >= priceOf maker && amount > 0
       then Just (Trade asset time amount price)
@@ -102,11 +151,11 @@ needsNewName :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], 
 needsNewName order ts maker = 
   let
     decreaseAmount order amount' = 
-        order { amountOf = (amountOf order)-amount' }
+        order { orderAmountOf = (amountOf order)-amount' }
     totalTraded = sum $ tradeAmountOf <$> ts
     decreasedOrder = decreaseAmount order totalTraded
   in
-    case matchOrders maker decreasedOrder of
+    case matchOrders (Maker maker) (Taker decreasedOrder) of
       Nothing -> (ts, maker)
       Just td -> (td:ts, decreaseAmount maker (tradeAmountOf td))
 
@@ -117,13 +166,13 @@ printOrder order = do
   putStr $ " (" ++ show (amountOf order) ++ ")"
   putStrLn ""
 
-sumOrderAmount :: List.NonEmpty (Order asset) -> Order asset
-sumOrderAmount orders = 
+sumakerAmount :: List.NonEmpty (Order asset) -> Order asset
+sumakerAmount orders = 
   let
-    order = NonEmpty.head orders
+    order  = NonEmpty.head orders
     amount = foldMap amountOf orders
   in
-    order { amountOf = amount }
+    order { orderAmountOf = amount }
 
 groupOrdersBy :: Eq b => (Order asset -> b) -> [Order asset] -> [List.NonEmpty (Order asset)]
 groupOrdersBy f orders = 
@@ -145,10 +194,10 @@ printBook book = do
   putStrLn typeOfBook
   putStrLn (replicate (length typeOfBook) '=')
   mapM_ printOrder $ 
-    sumOrderAmount <$> groupOrdersBy priceOf (asks book)
+    sumakerAmount <$> groupOrdersBy priceOf (asks book)
   putStrLn ""
   mapM_ printOrder $ 
-    sumOrderAmount <$> groupOrdersBy priceOf (reverse (bids book))
+    sumakerAmount <$> groupOrdersBy priceOf (reverse (bids book))
   putStrLn ""
 
 emptyBook :: Book asset

@@ -48,13 +48,13 @@ main = hspec $ do
       it "should not match" $ do
 
         matchOrders 
-          (Order Bid BTC (Time 0) (Amount 1) (Price 10))
-          (Order Ask BTC (Time 0) (Amount 1) (Price 20))
+          (Maker (Order Bid BTC (Time 0) (Amount 1) (Price 10)))
+          (Taker (Order Ask BTC (Time 0) (Amount 1) (Price 20)))
             `shouldBe` Nothing
 
         matchOrders 
-          (Order Ask BTC (Time 0) (Amount 1) (Price 20))
-          (Order Bid BTC (Time 0) (Amount 1) (Price 10))
+          (Maker (Order Ask BTC (Time 0) (Amount 1) (Price 20)))
+          (Taker (Order Bid BTC (Time 0) (Amount 1) (Price 10)))
             `shouldBe` Nothing
 
     context "when bid is equal to ask" $ do
@@ -62,14 +62,14 @@ main = hspec $ do
       it "should match" $ do
 
         matchOrders 
-          (Order Bid BTC (Time 0) (Amount 2) (Price 15))
-          (Order Ask BTC (Time 0) (Amount 1) (Price 15))
+          (Maker (Order Bid BTC (Time 0) (Amount 2) (Price 15)))
+          (Taker (Order Ask BTC (Time 0) (Amount 1) (Price 15)))
             `shouldBe` 
           Just (Trade BTC (Time 0) (Amount 1) (Price 15))
 
         matchOrders 
-          (Order Ask BTC (Time 0) (Amount 2) (Price 15))
-          (Order Bid BTC (Time 0) (Amount 1) (Price 15))
+          (Maker (Order Ask BTC (Time 0) (Amount 2) (Price 15)))
+          (Taker (Order Bid BTC (Time 0) (Amount 1) (Price 15)))
             `shouldBe` 
           Just (Trade BTC (Time 0) (Amount 1) (Price 15))
 
@@ -78,13 +78,13 @@ main = hspec $ do
       it "should match" $ do
 
         matchOrders 
-          (Order Bid BTC (Time 0) (Amount 2) (Price 20))
-          (Order Ask BTC (Time 0) (Amount 1) (Price 10))
+          (Maker (Order Bid BTC (Time 0) (Amount 2) (Price 20)))
+          (Taker (Order Ask BTC (Time 0) (Amount 1) (Price 10)))
             `shouldBe` 
           Just (Trade BTC (Time 0) (Amount 1) (Price 20))
 
         matchOrders 
-          (Order Ask BTC (Time 0) (Amount 2) (Price 10))
-          (Order Bid BTC (Time 0) (Amount 1) (Price 20))
+          (Maker (Order Ask BTC (Time 0) (Amount 2) (Price 10)))
+          (Taker (Order Bid BTC (Time 0) (Amount 1) (Price 20)))
             `shouldBe` 
           Just (Trade BTC (Time 0) (Amount 1) (Price 10))
