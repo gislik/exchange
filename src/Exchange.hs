@@ -5,8 +5,8 @@
 
 module Exchange where 
 
-import Data.Monoid (Sum(..))
-import Data.Foldable (mapM_, foldMap)
+-- import Data.Monoid (Sum(..))
+-- import Data.Foldable (mapM_, foldMap)
 import Data.Typeable (Typeable, typeOf)
 import Data.List (insertBy, groupBy, mapAccumL)
 import qualified Data.List.NonEmpty as NonEmpty
@@ -16,7 +16,7 @@ import Data.Ord (Down(Down), comparing)
 
 import qualified Control.Monad.Trans.State.Strict as State
 import Control.Monad.Trans.State.Strict (State)
-import Control.Monad (forM)
+-- import Control.Monad (forM)
 
 -- Assets
 data ETH = 
@@ -103,14 +103,14 @@ instance Entry Order asset where
 isBid :: Entry a asset => a asset -> Bool
 isBid order =
   case sideOf order of
-    Bid       -> True
-    otherwise -> False
+    Bid -> True
+    _   -> False
 
 isAsk :: Entry a asset => a asset -> Bool
 isAsk order =
   case sideOf order of
-    Ask       -> True
-    otherwise -> False
+    Ask -> True
+    _   -> False
 
 newtype Maker asset = 
   Maker (Order asset)
@@ -150,8 +150,8 @@ matchOrders maker taker =
 needsNewName :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Order asset)
 needsNewName order ts maker = 
   let
-    decreaseAmount order amount' = 
-        order { orderAmountOf = (amountOf order)-amount' }
+    decreaseAmount order' amount' = 
+        order' { orderAmountOf = (amountOf order)-amount' }
     totalTraded = sum $ tradeAmountOf <$> ts
     decreasedOrder = decreaseAmount order totalTraded
   in
@@ -206,21 +206,8 @@ emptyBook = Book [] []
 newOrder :: Order asset -> Book asset -> Book asset
 newOrder order book | isBid order = 
   book { bids = insertBy (comparing (Down . priceOf)) order (bids book) }
-newOrder order book | isAsk order || otherwise = 
+newOrder order book | otherwise = 
   book { asks = insertBy (comparing priceOf) order (asks book) }
-
-
--- bid1 = Order Bid BTC (Time 0) (Amount 1.0) (Price 1000)
--- bid2 = Order Bid BTC (Time 0) (Amount 0.5) (Price 1100)
--- bid3 = Order Bid BTC (Time 0) (Amount 0.6) (Price 900)
--- ask1 = Order Ask BTC (Time 0) (Amount 0.5) (Price 1500)
--- ask2 = Order Ask BTC (Time 0) (Amount 0.2) (Price 1500)
--- ask3 = Order Ask BTC (Time 0) (Amount 0.1) (Price 1400)
-
--- bid' = Order Bid BTC (Time 0) (Amount 0.6) (Price 1500)
--- ask' = Order Ask BTC (Time 0) (Amount 0.6) (Price 1000)
-
--- book = foldr newOrder emptyBook [bid1, bid2, ask1, ask2, ask3]
 
 
 -- Exchange
@@ -238,11 +225,6 @@ emptyExchange :: Exchange asset ()
 emptyExchange = 
   return ()
 
-
--- newExchange :: Book asset -> Exchange asset ()
--- newExchange book = do
-  -- State.put book
-  -- emptyExchange
 
 placeOrder :: Order asset -> Exchange asset [Trade asset]
 placeOrder order = do
