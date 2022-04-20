@@ -64,6 +64,13 @@ class Entry a asset where
 
   setAmountOf :: a asset -> Amount -> a asset
 
+incAmountOf :: Entry a asset => a asset -> Amount -> a asset
+incAmountOf entry amount =
+  setAmountOf entry (amountOf entry + amount)
+
+decAmountOf :: Entry a asset => a asset -> Amount -> a asset
+decAmountOf entry amount =
+  setAmountOf entry (amountOf entry - amount)
 
 -- Trade
 data Trade asset =
@@ -158,16 +165,22 @@ matchOrders maker taker =
 tradeOrders :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
 tradeOrders makers taker = 
   let
-    go maker trade' =
+    go maker (makers', trades', amount') trade' =
       case trade' of 
         Just trade | amountOf maker - amountOf trade > 0 -> 
-          ([setAmountOf maker (amountOf maker - amountOf trade)], [trade])
+          (decAmountOf maker (amountOf trade):makers', trade:trades', amount' + amountOf trade)
         Just trade ->
-          ([], [trade])
+          (makers', trade:trades', amount' + amountOf trade)
         Nothing -> 
-          ([maker], [])
+          (maker:makers', trades', amount')
+    s0 = 
+      ([],[], (Amount 0))
+    f maker state@(_, _, amt') = 
+      go maker state (matchOrders maker (decAmountOf taker amt'))
+    (ms, ts, amt) = 
+      foldr f  s0 makers
   in
-    foldMap (\maker -> go maker (matchOrders maker taker)) makers
+    (reverse ms, reverse ts)
     
 
 printOrder :: Typeable asset => Order asset -> IO ()
@@ -177,8 +190,8 @@ printOrder order = do
   putStr $ " (" ++ show (amountOf order) ++ ")"
   putStrLn ""
 
-sumakerAmount :: List.NonEmpty (Order asset) -> Order asset
-sumakerAmount orders = 
+sumOrderAmount :: List.NonEmpty (Order asset) -> Order asset
+sumOrderAmount orders = 
   let
     order  = NonEmpty.head orders
     amount = foldMap amountOf orders
@@ -198,13 +211,6 @@ data Book asset = Book {
   , asks :: [Order asset]
 } deriving (Show, Typeable)
 
--- instance Semigroup (Book asset) where
-  -- Book bids1 asks1 <> Book bids2 asks2 = 
-    -- Book (bids1 <> bids2) (asks1 <> asks2)
-
--- instance Monoid (Book asset) where
-  -- mempty = emptyBook
-
 instance Foldable Book where
   foldr f x0 (Book bids asks) = 
     foldr f x0 (assetOf <$> bids ++ asks)
@@ -215,10 +221,10 @@ printBook book = do
   putStrLn typeOfBook
   putStrLn (replicate (length typeOfBook) '=')
   mapM_ printOrder $ 
-    sumakerAmount <$> groupOrdersBy priceOf (asks book)
+    sumOrderAmount <$> groupOrdersBy priceOf (asks book)
   putStrLn ""
   mapM_ printOrder $ 
-    sumakerAmount <$> groupOrdersBy priceOf (reverse (bids book))
+    sumOrderAmount <$> groupOrdersBy priceOf (reverse (bids book))
   putStrLn ""
 
 emptyBook :: Book asset
@@ -255,12 +261,10 @@ placeOrder order = do
   book <- State.get 
   if isBid order
     then do
-      -- let (ts, as) = mapAccumL (needsNewName order) [] (asks book)
       let (as, ts) = tradeOrders (Maker <$> asks book) (Taker order)
       State.put $ book { asks = ((\(Maker order) -> order) <$> as) }
       return ts
     else do
-      -- let (ts, bs) = mapAccumL (needsNewName order) [] (bids book)
       let (bs, ts) = tradeOrders (Maker <$> bids book) (Taker order)
       State.put $ book { bids = ((\(Maker order) -> order) <$> bs) }
       return ts
