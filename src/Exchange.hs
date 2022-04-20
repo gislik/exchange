@@ -62,6 +62,8 @@ class Entry a asset where
   amountOf :: a asset -> Amount
   priceOf  :: a asset -> Price
 
+  setAmountOf :: a asset -> Amount -> a asset
+
 
 -- Trade
 data Trade asset =
@@ -80,6 +82,7 @@ instance Entry Trade asset where
   timeOf   = tradeTimeOf
   amountOf = tradeAmountOf
   priceOf  = tradePriceOf
+  setAmountOf trade amount = trade { tradeAmountOf = amount }
 
 
 -- Order
@@ -99,6 +102,7 @@ instance Entry Order asset where
   timeOf   = orderTimeOf
   amountOf = orderAmountOf
   priceOf  = orderPriceOf
+  setAmountOf order amount = order { orderAmountOf = amount }
 
 isBid :: Entry a asset => a asset -> Bool
 isBid order =
@@ -114,6 +118,7 @@ isAsk order =
 
 newtype Maker asset = 
   Maker (Order asset)
+    deriving (Show, Eq)
 
 instance Entry Maker asset where
   sideOf   (Maker order) = sideOf order
@@ -121,6 +126,7 @@ instance Entry Maker asset where
   timeOf   (Maker order) = timeOf order
   amountOf (Maker order) = amountOf order
   priceOf  (Maker order) = priceOf order
+  setAmountOf (Maker order) amount = Maker order { orderAmountOf = amount }
 
 newtype Taker asset = 
   Taker (Order asset)
@@ -131,6 +137,7 @@ instance Entry Taker asset where
   timeOf   (Taker order) = timeOf order
   amountOf (Taker order) = amountOf order
   priceOf  (Taker order) = priceOf order
+  setAmountOf (Taker order) amount = Taker order { orderAmountOf = amount }
 
 matchOrders :: Maker asset -> Taker asset -> Maybe (Trade asset)
 matchOrders maker taker = 
@@ -139,25 +146,29 @@ matchOrders maker taker =
     time   = timeOf taker
     amount = min (amountOf taker) (amountOf maker)
     price  = priceOf maker
+    trade  = Trade asset time amount price
   in
     if isBid taker && isAsk maker && priceOf taker >= priceOf maker && amount > 0
-      then Just (Trade asset time amount price)
+      then Just trade
     else if isAsk taker && isBid maker && priceOf taker <= priceOf maker && amount > 0
-      then Just (Trade asset time amount price)
+      then Just trade
     else 
       Nothing
 
-needsNewName :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Order asset)
-needsNewName order ts maker = 
+tradeOrders :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
+tradeOrders makers taker = 
   let
-    decreaseAmount order' amount' = 
-        order' { orderAmountOf = (amountOf order)-amount' }
-    totalTraded = sum $ tradeAmountOf <$> ts
-    decreasedOrder = decreaseAmount order totalTraded
+    go maker trade' =
+      case trade' of 
+        Just trade | amountOf maker - amountOf trade > 0 -> 
+          ([setAmountOf maker (amountOf maker - amountOf trade)], [trade])
+        Just trade ->
+          ([], [trade])
+        Nothing -> 
+          ([maker], [])
   in
-    case matchOrders (Maker maker) (Taker decreasedOrder) of
-      Nothing -> (ts, maker)
-      Just td -> (td:ts, decreaseAmount maker (tradeAmountOf td))
+    foldMap (\maker -> go maker (matchOrders maker taker)) makers
+    
 
 printOrder :: Typeable asset => Order asset -> IO ()
 printOrder order = do
@@ -187,6 +198,16 @@ data Book asset = Book {
   , asks :: [Order asset]
 } deriving (Show, Typeable)
 
+-- instance Semigroup (Book asset) where
+  -- Book bids1 asks1 <> Book bids2 asks2 = 
+    -- Book (bids1 <> bids2) (asks1 <> asks2)
+
+-- instance Monoid (Book asset) where
+  -- mempty = emptyBook
+
+instance Foldable Book where
+  foldr f x0 (Book bids asks) = 
+    foldr f x0 (assetOf <$> bids ++ asks)
 
 printBook :: (Show asset, Typeable asset) => Book asset -> IO ()
 printBook book = do
@@ -214,8 +235,11 @@ newOrder order book | otherwise =
 type Exchange asset = 
   State (Book asset) 
 
-runExchange :: Book asset -> Exchange asset a -> a
-runExchange book ex = State.evalState ex book
+runExchangeWith :: Book asset -> Exchange asset a -> a
+runExchangeWith book ex = State.evalState ex book
+
+runExchange :: Exchange asset a -> a
+runExchange = runExchangeWith emptyBook
 
 printExchange :: Exchange asset ()
 printExchange = undefined
@@ -231,12 +255,16 @@ placeOrder order = do
   book <- State.get 
   if isBid order
     then do
-      let (ts, as) = mapAccumL (needsNewName order) [] (asks book)
-      State.put $ book { asks = as }
+      -- let (ts, as) = mapAccumL (needsNewName order) [] (asks book)
+      let (as, ts) = tradeOrders (Maker <$> asks book) (Taker order)
+      State.put $ book { asks = ((\(Maker order) -> order) <$> as) }
       return ts
     else do
-      let (ts, bs) = mapAccumL (needsNewName order) [] (bids book)
-      State.put $ book { bids = bs }
+      -- let (ts, bs) = mapAccumL (needsNewName order) [] (bids book)
+      let (bs, ts) = tradeOrders (Maker <$> bids book) (Taker order)
+      State.put $ book { bids = ((\(Maker order) -> order) <$> bs) }
       return ts
 
-
+exchangeBook :: Exchange asset (Book asset)
+exchangeBook =
+  State.get

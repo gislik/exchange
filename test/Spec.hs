@@ -4,6 +4,7 @@ import Exchange
 
 main :: IO ()
 main = hspec $ do
+
   describe "Amount" $ do
 
     it "should be printable" $ do
@@ -45,46 +46,145 @@ main = hspec $ do
 
     context "when bid is lower than ask" $ do
 
+      let 
+        maker1 = 
+          Maker (Order Bid BTC (Time 0) (Amount 1) (Price 10))
+        taker1 = 
+          Taker (Order Ask BTC (Time 0) (Amount 1) (Price 20))
+        maker2 =
+          Maker (Order Ask BTC (Time 0) (Amount 1) (Price 20))
+        taker2 =
+          Taker (Order Bid BTC (Time 0) (Amount 1) (Price 10))
+
       it "should not match" $ do
+      
+        matchOrders maker1 taker1 `shouldBe` Nothing
+        matchOrders maker2 taker2 `shouldBe` Nothing
 
-        matchOrders 
-          (Maker (Order Bid BTC (Time 0) (Amount 1) (Price 10)))
-          (Taker (Order Ask BTC (Time 0) (Amount 1) (Price 20)))
-            `shouldBe` Nothing
+      it "should result in no trades and unchanged makers" $ do
 
-        matchOrders 
-          (Maker (Order Ask BTC (Time 0) (Amount 1) (Price 20)))
-          (Taker (Order Bid BTC (Time 0) (Amount 1) (Price 10)))
-            `shouldBe` Nothing
+        let
+          (makers1, trades1) = 
+            tradeOrders [maker1] taker1
+
+        trades1 `shouldBe` []
+        makers1 `shouldBe` [maker1]
+
+        let
+          (makers2, trades2) = 
+            tradeOrders [maker2] taker2
+
+        trades2 `shouldBe` []
+        makers2 `shouldBe` [maker2]
+
 
     context "when bid is equal to ask" $ do
 
+      let
+        maker1 =
+          Maker (Order Bid BTC (Time 0) (Amount 2) (Price 15))
+        taker1 =
+          Taker (Order Ask BTC (Time 0) (Amount 1) (Price 15))
+        maker2 =
+          Maker (Order Ask BTC (Time 0) (Amount 2) (Price 15))
+        taker2 =
+          Taker (Order Bid BTC (Time 0) (Amount 1) (Price 15))
+        trade = 
+          Trade BTC (Time 0) (Amount 1) (Price 15)
+        maker3 =
+          Maker (Order Bid BTC (Time 0) (Amount 2) (Price 15))
+        taker3 =
+          Taker (Order Ask BTC (Time 0) (Amount 3) (Price 15))
+        trade3 = 
+          Trade BTC (Time 0) (Amount 2) (Price 15)
+
       it "should match" $ do
 
-        matchOrders 
-          (Maker (Order Bid BTC (Time 0) (Amount 2) (Price 15)))
-          (Taker (Order Ask BTC (Time 0) (Amount 1) (Price 15)))
-            `shouldBe` 
-          Just (Trade BTC (Time 0) (Amount 1) (Price 15))
+        matchOrders maker1 taker1 `shouldBe` Just trade
+        matchOrders maker2 taker2 `shouldBe` Just trade
 
-        matchOrders 
-          (Maker (Order Ask BTC (Time 0) (Amount 2) (Price 15)))
-          (Taker (Order Bid BTC (Time 0) (Amount 1) (Price 15)))
-            `shouldBe` 
-          Just (Trade BTC (Time 0) (Amount 1) (Price 15))
+      it "should result in trades" $ do
+
+        let
+          (makers1, trades1) =
+            tradeOrders [maker1] taker1
+
+        trades1 `shouldBe` [trade]
+        makers1 `shouldBe` [setAmountOf maker1 (amountOf maker1 - amountOf trade)]
+
+        let
+          (makers2, trades2) =
+            tradeOrders [maker2] taker2
+
+        trades2 `shouldBe` [trade]
+        makers2 `shouldBe` [setAmountOf maker2 (amountOf maker2 - amountOf trade)]
+
+        let
+          (makers3, trades3) =
+            tradeOrders [maker3] taker3
+
+        trades3 `shouldBe` [trade3]
+        makers3 `shouldBe` []
+
+        let
+          (makers4, trades4) =
+            tradeOrders [maker1, maker3] taker3
+
+        trades4 `shouldBe` [trade3, trade]
 
     context "when bid is higher than ask" $ do
 
+      let
+        maker1 =
+          Maker (Order Bid BTC (Time 0) (Amount 2) (Price 20))
+        taker1 =
+          Taker (Order Ask BTC (Time 0) (Amount 1) (Price 10))
+        trade1 =
+          Trade BTC (Time 0) (Amount 1) (Price 20)
+        maker2 =
+          Maker (Order Ask BTC (Time 0) (Amount 2) (Price 10))
+        taker2 =
+          Taker (Order Bid BTC (Time 0) (Amount 1) (Price 20))
+        trade2 =
+          Trade BTC (Time 0) (Amount 1) (Price 10)
+
       it "should match" $ do
 
-        matchOrders 
-          (Maker (Order Bid BTC (Time 0) (Amount 2) (Price 20)))
-          (Taker (Order Ask BTC (Time 0) (Amount 1) (Price 10)))
-            `shouldBe` 
-          Just (Trade BTC (Time 0) (Amount 1) (Price 20))
+        matchOrders maker1 taker1 `shouldBe` Just trade1
+        matchOrders maker2 taker2 `shouldBe` Just trade2
 
-        matchOrders 
-          (Maker (Order Ask BTC (Time 0) (Amount 2) (Price 10)))
-          (Taker (Order Bid BTC (Time 0) (Amount 1) (Price 20)))
-            `shouldBe` 
-          Just (Trade BTC (Time 0) (Amount 1) (Price 10))
+  describe "Exchange" $ do
+    
+    context "when no orders have been placed" $ do
+
+      it "should have an empty book" $ do
+
+        length (runExchange exchangeBook) `shouldBe` 0
+        
+    context "when a single order has been placed" $ do
+
+      let 
+        book = 
+          foldr newOrder emptyBook 
+            [
+              Order Bid BTC (Time 0) (Amount 2) (Price 10)
+            ]
+
+      it "should have a book with one entry" $ do
+
+        length (runExchangeWith book exchangeBook) `shouldBe` 1
+
+
+    context "when two orders has been placed" $ do
+
+      let
+        book = 
+          foldr newOrder emptyBook 
+            [
+              Order Bid BTC (Time 0) (Amount 2) (Price 10)
+            , Order Ask BTC (Time 0) (Amount 2) (Price 20)
+            ]
+
+      it "should have a book with two entries" $ do
+
+        length (runExchangeWith book exchangeBook) `shouldBe` 2
