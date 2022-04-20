@@ -52,6 +52,14 @@ data Side =
   | Ask
   deriving (Show, Eq)
 
+-- Trade
+data Trade asset =
+  Trade asset Time Amount Price
+    deriving (Show, Eq)
+
+tradeAmountOf :: Trade asset -> Amount
+tradeAmountOf (Trade _ _ amount _) = amount
+
 -- Order
 data Order asset = 
   Order {
@@ -75,8 +83,8 @@ isAsk order =
     Ask -> True
     otherwise -> False
 
-compareOrder :: Order asset -> Order asset -> Maybe (Trade asset)
-compareOrder taker maker = 
+matchOrders :: Order asset -> Order asset -> Maybe (Trade asset)
+matchOrders maker taker = 
   let
     asset = assetOf taker
     time = timeOf taker
@@ -90,15 +98,15 @@ compareOrder taker maker =
     else 
       Nothing
 
-matchOrder :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Order asset)
-matchOrder order ts maker = 
+needsNewName :: Order asset -> [Trade asset] -> Order asset ->  ([Trade asset], Order asset)
+needsNewName order ts maker = 
   let
     decreaseAmount order amount' = 
         order { amountOf = (amountOf order)-amount' }
     totalTraded = sum $ tradeAmountOf <$> ts
     decreasedOrder = decreaseAmount order totalTraded
   in
-    case compareOrder decreasedOrder maker of
+    case matchOrders maker decreasedOrder of
       Nothing -> (ts, maker)
       Just td -> (td:ts, decreaseAmount maker (tradeAmountOf td))
 
@@ -153,17 +161,17 @@ newOrder order book | isAsk order || otherwise =
   book { asks = insertBy (comparing priceOf) order (asks book) }
 
 
-bid1 = Order Bid BTC (Time 0) (Amount 1.0) (Price 1000)
-bid2 = Order Bid BTC (Time 0) (Amount 0.5) (Price 1100)
-bid3 = Order Bid BTC (Time 0) (Amount 0.6) (Price 900)
-ask1 = Order Ask BTC (Time 0) (Amount 0.5) (Price 1500)
-ask2 = Order Ask BTC (Time 0) (Amount 0.2) (Price 1500)
-ask3 = Order Ask BTC (Time 0) (Amount 0.1) (Price 1400)
+-- bid1 = Order Bid BTC (Time 0) (Amount 1.0) (Price 1000)
+-- bid2 = Order Bid BTC (Time 0) (Amount 0.5) (Price 1100)
+-- bid3 = Order Bid BTC (Time 0) (Amount 0.6) (Price 900)
+-- ask1 = Order Ask BTC (Time 0) (Amount 0.5) (Price 1500)
+-- ask2 = Order Ask BTC (Time 0) (Amount 0.2) (Price 1500)
+-- ask3 = Order Ask BTC (Time 0) (Amount 0.1) (Price 1400)
 
-bid' = Order Bid BTC (Time 0) (Amount 0.6) (Price 1500)
-ask' = Order Ask BTC (Time 0) (Amount 0.6) (Price 1000)
+-- bid' = Order Bid BTC (Time 0) (Amount 0.6) (Price 1500)
+-- ask' = Order Ask BTC (Time 0) (Amount 0.6) (Price 1000)
 
-book = foldr newOrder emptyBook [bid1, bid2, ask1, ask2, ask3]
+-- book = foldr newOrder emptyBook [bid1, bid2, ask1, ask2, ask3]
 
 
 -- Exchange
@@ -182,28 +190,21 @@ emptyExchange =
   return ()
 
 
-newExchange :: Book asset -> Exchange asset ()
-newExchange book = do
-  State.put book
-  emptyExchange
-
-data Trade asset =
-  Trade asset Time Amount Price
-    deriving (Show)
-
-tradeAmountOf :: Trade asset -> Amount
-tradeAmountOf (Trade _ _ amount _) = amount
+-- newExchange :: Book asset -> Exchange asset ()
+-- newExchange book = do
+  -- State.put book
+  -- emptyExchange
 
 placeOrder :: Order asset -> Exchange asset [Trade asset]
 placeOrder order = do
   book <- State.get 
   if isBid order
     then do
-      let (ts, as) = mapAccumL (matchOrder order) [] (asks book)
+      let (ts, as) = mapAccumL (needsNewName order) [] (asks book)
       State.put $ book { asks = as }
       return ts
     else do
-      let (ts, bs) = mapAccumL (matchOrder order) [] (bids book)
+      let (ts, bs) = mapAccumL (needsNewName order) [] (bids book)
       State.put $ book { bids = bs }
       return ts
 
