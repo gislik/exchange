@@ -12,8 +12,6 @@ import qualified Data.List.NonEmpty as List (NonEmpty)
 import Data.Function (on)
 import Data.Ord (Down(Down), comparing)
 
--- import qualified Data.Map.Strict as Map
--- import Data.Map.Strict (Map)
 import qualified Control.Monad.Trans.State.Strict as State
 import Control.Monad.Trans.State.Strict (State)
 import Control.Monad (forM)
@@ -154,8 +152,12 @@ ask' = Ask BTC (Time 0) (Amount 0.6) (Price 1000)
 book = foldr newOrder emptyBook [bid1, bid2, ask1, ask2, ask3]
 
 
+-- Exchange
 type Exchange asset = 
   State (Book asset) 
+
+runExchange :: Book asset -> Exchange asset a -> a
+runExchange book ex = State.evalState ex book
 
 printExchange :: Exchange asset ()
 printExchange = undefined
