@@ -30,10 +30,12 @@ newtype Amount =
     deriving (Show, Eq, Ord, Num)
 
 instance Semigroup Amount where
-  Amount d <> Amount e = Amount (d + e)
+  Amount d <> Amount e = 
+    Amount (d + e)
   
 instance Monoid Amount where
-  mempty = Amount 0.0
+  mempty = 
+    Amount 0.0
 
 -- Price
 newtype Price = 
@@ -176,10 +178,14 @@ matchOrders maker taker =
 tradeOrders :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
 tradeOrders makers taker = 
   let
+    decAmountBy maker trade = 
+      decAmountOf maker (amountOf trade)
+    remainingAmount maker trade =
+      amountOf maker - amountOf trade 
     go maker (makers', trades', amount') trade' =
       case trade' of 
-        Just trade | amountOf maker - amountOf trade > 0 -> 
-          (decAmountOf maker (amountOf trade):makers', trade:trades', amount' + amountOf trade)
+        Just trade | remainingAmount maker trade > 0 -> 
+          (decAmountBy maker trade:makers', trade:trades', amountOf trade + amount')
         Just trade ->
           (makers', trade:trades', amount' + amountOf trade)
         Nothing -> 
@@ -191,7 +197,6 @@ tradeOrders makers taker =
   in
     (reverse ms, reverse ts)
     
-
 printOrder :: Typeable asset => Maker asset -> IO ()
 printOrder order = do
   putStr $ show (sideOf order)
@@ -274,6 +279,6 @@ place order = do
       State.put $ book { bids = bs }
       return ts
 
-book :: Exchange asset (Book asset)
-book =
+orderbook :: Exchange asset (Book asset)
+orderbook =
   State.get
