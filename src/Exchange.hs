@@ -5,18 +5,14 @@
 
 module Exchange where 
 
--- import Data.Monoid (Sum(..))
--- import Data.Foldable (mapM_, foldMap)
-import Data.Typeable (Typeable, typeOf)
-import Data.List (insertBy, groupBy)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.List.NonEmpty as List (NonEmpty)
+import qualified Control.Monad.Trans.State.Strict as State
+import Data.Typeable (Typeable, typeOf)
+import Data.List (insertBy, groupBy)
 import Data.Function (on)
 import Data.Ord (Down(Down), comparing)
-
-import qualified Control.Monad.Trans.State.Strict as State
 import Control.Monad.Trans.State.Strict (State)
--- import Control.Monad (forM)
 
 -- Assets
 data ETH = 
@@ -239,23 +235,19 @@ newOrder order book | otherwise =
 type Exchange asset = 
   State (Book asset) 
 
-runExchangeWith :: Book asset -> Exchange asset a -> a
-runExchangeWith book ex = State.evalState ex book
+runWith :: Book asset -> Exchange asset a -> a
+runWith book ex = State.evalState ex book
 
-runExchange :: Exchange asset a -> a
-runExchange = runExchangeWith emptyBook
+run :: Exchange asset a -> a
+run = runWith emptyBook
 
-printExchange :: Exchange asset ()
-printExchange = undefined
-
-
-emptyExchange :: Exchange asset ()
-emptyExchange = 
+empty :: Exchange asset ()
+empty = 
   return ()
 
 
-placeOrder :: Order asset -> Exchange asset [Trade asset]
-placeOrder order = do
+place :: Order asset -> Exchange asset [Trade asset]
+place order = do
   book <- State.get 
   if isBid order
     then do
@@ -267,6 +259,6 @@ placeOrder order = do
       State.put $ book { bids = bs }
       return ts
 
-exchangeBook :: Exchange asset (Book asset)
-exchangeBook =
+book :: Exchange asset (Book asset)
+book =
   State.get

@@ -204,12 +204,12 @@ main = hspec $ do
 
       it "should have an empty book" $ do
 
-        length (runExchange exchangeBook) `shouldBe` 0
+        length (run book) `shouldBe` 0
         
     context "when a single order has been placed" $ do
 
       let 
-        book = 
+        book' = 
           foldr newOrder emptyBook 
             [
               Maker (Order Bid BTC (Time 0) (Amount 2) (Price 10))
@@ -217,13 +217,13 @@ main = hspec $ do
 
       it "should have a book with one entry" $ do
 
-        length (runExchangeWith book exchangeBook) `shouldBe` 1
+        length (runWith book' book) `shouldBe` 1
 
 
     context "when two orders has been placed" $ do
 
       let
-        book = 
+        book' = 
           foldr newOrder emptyBook 
             [
               Maker (Order Bid BTC (Time 0) (Amount 2) (Price 10))
@@ -232,4 +232,4 @@ main = hspec $ do
 
       it "should have a book with two entries" $ do
 
-        length (runExchangeWith book exchangeBook) `shouldBe` 2
+        length (runWith book' book) `shouldBe` 2
