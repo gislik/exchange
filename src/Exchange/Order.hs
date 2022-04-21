@@ -1,23 +1,13 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Exchange.Order where 
 
-import qualified Data.Char as Char
 import qualified Data.List as List
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.List.NonEmpty as List (NonEmpty)
-import qualified Control.Monad.Trans.State.Strict as State
-import qualified Text.ParserCombinators.ReadP as Read
-import GHC.Read (Read, readPrec)
 import Data.Typeable (Typeable, typeOf)
 import Data.Function (on)
-import Data.Ord (Down(Down), comparing)
-import Text.ParserCombinators.ReadP (ReadP, (+++))
-import Control.Monad.Trans.State.Strict (StateT)
-import Data.Monoid (Ap(..))
 import Exchange.Trade (Trade(Trade))
 import Exchange.Entry 
 import Exchange.Type
@@ -111,28 +101,28 @@ match maker taker =
     time   = timeOf taker
     amount = min (amountOf maker) (amountOf taker)
     price  = priceOf maker
-    trade  = Trade asset time amount price
+    trade'  = Trade asset time amount price
   in
     if isBid taker && isAsk maker && priceOf taker >= priceOf maker && amount > 0
-      then Just trade
+      then Just trade'
     else if isAsk taker && isBid maker && priceOf taker <= priceOf maker && amount > 0
-      then Just trade
+      then Just trade'
     else 
       Nothing
 
 trade :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
 trade makers taker = 
   let
-    decAmountBy maker trade = 
-      decAmountOf maker (amountOf trade)
-    remainingAmount maker trade =
-      amountOf maker - amountOf trade 
-    go maker (makers', trades', amount') trade' =
-      case trade' of 
-        Just trade | remainingAmount maker trade > 0 -> 
-          (decAmountBy maker trade:makers', trade:trades', amountOf trade + amount')
-        Just trade ->
-          (makers', trade:trades', amount' + amountOf trade)
+    decAmountBy maker trade' = 
+      decAmountOf maker (amountOf trade')
+    remainingAmount maker trade' =
+      amountOf maker - amountOf trade'
+    go maker (makers', trades', amount') mtrade =
+      case mtrade of 
+        Just trade' | remainingAmount maker trade' > 0 -> 
+          (decAmountBy maker trade':makers', trade':trades', amountOf trade' + amount')
+        Just trade' ->
+          (makers', trade':trades', amount' + amountOf trade')
         Nothing -> 
           (maker:makers', trades', amount')
     f maker state@(_, _, amt') = 

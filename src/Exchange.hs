@@ -1,33 +1,17 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances #-}
-
 module Exchange (
   module Exchange
 , module Exchange.Entry
 , module Exchange.Type
 ) where 
 
-import qualified Data.Char as Char
-import qualified Data.List.NonEmpty as NonEmpty
-import qualified Data.List.NonEmpty as List (NonEmpty)
 import qualified Control.Monad.Trans.State.Strict as State
-import qualified Text.ParserCombinators.ReadP as Read
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
 import Exchange.Order (Order)
-import GHC.Read (Read, readPrec)
-import Data.Typeable (Typeable, typeOf)
-import Data.List (insertBy, groupBy)
-import Data.Function (on)
-import Data.Ord (Down(Down), comparing)
-import Text.ParserCombinators.ReadP (ReadP, (+++))
 import Control.Monad.Trans.State.Strict (StateT)
-import Data.Monoid (Ap(..))
 import Exchange.Trade (Trade)
-import Exchange.Book (Book(Book))
 import Exchange.Entry
+import Exchange.Book (Book)
 import Exchange.Type
 
 

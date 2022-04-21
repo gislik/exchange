@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Main where
 
 import qualified Exchange.Asset as Asset
@@ -8,11 +6,12 @@ import qualified Exchange.Book  as Book
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (forM_)
 import Control.Exception (catch, SomeException)
-import System.IO (getLine, hFlush, stdout)
-import GHC.Read (Read, readPrec)
+import System.IO (hFlush, stdout)
+import GHC.Read (readPrec)
 import Exchange
 import Exchange.Order (Order(Order))
 import Exchange.Book (Book)
+
 
 instance Read asset => Read (Order asset) where
   readPrec =
@@ -58,6 +57,6 @@ main = do
       return ()
 
 parseErrorHandler :: SomeException -> IO (Order Asset.BTC)
-parseErrorHandler e =  do
+parseErrorHandler _ =  do
   putStrLn "no order"
   return (Order Bid Asset.BTC (Time 0) (Amount 0) (Price 0))
