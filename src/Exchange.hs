@@ -97,7 +97,22 @@ data Order asset =
     , orderAmountOf :: Amount
     , orderPriceOf :: Price
     } 
-  deriving (Show, Eq)
+  deriving (Eq, Typeable)
+
+instance (Show asset, Typeable asset) => Show (Order asset) where
+  showsPrec i order = 
+    let
+      go =
+        showString (show $ typeOf order) . showChar ' ' . 
+        showsPrec i (sideOf order) . showChar ' ' . 
+        showsPrec i (assetOf order) . showChar ' ' .
+        showsPrec i (timeOf order) . showChar ' ' .
+        showsPrec i (amountOf order) . showChar ' ' .
+        showsPrec i (priceOf order) 
+    in
+      if i > 0
+        then showParen True go
+        else go
 
 instance Entry Order asset where
   sideOf   = orderSideOf
