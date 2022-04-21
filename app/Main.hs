@@ -13,14 +13,23 @@ import Exchange.Order (Order(Order))
 import Exchange.Book (Book)
 
 
-instance Read asset => Read (Order asset) where
+newtype ReadOrder asset =
+  ReadOrder {
+    getOrder :: Order asset
+  }
+
+instance Read asset => Read (ReadOrder asset) where
   readPrec =
-    Order <$> 
-      readPrec <*> 
-      readPrec <*> 
-      pure (Time 0) <*> 
-      (Amount <$> readPrec) <*> 
-      (Price <$> readPrec)
+    let
+      order =
+        Order <$> 
+          readPrec <*> 
+          readPrec <*> 
+          pure (Time 0) <*> 
+          (Amount <$> readPrec) <*> 
+          (Price <$> readPrec)
+    in
+      ReadOrder <$> order
 
 book :: Book Asset.BTC
 book = 
@@ -45,7 +54,7 @@ main = do
         Book.print book'
         putStr "Enter trade: "
         hFlush stdout
-        flip setTimeOf time <$> readLn `catch` parseErrorHandler
+        flip setTimeOf time . getOrder  <$> readLn `catch` parseErrorHandler
       trades <- place order 
       liftIO $ do
         putStrLn ""
@@ -56,7 +65,7 @@ main = do
         putStrLn ""
       return ()
 
-parseErrorHandler :: SomeException -> IO (Order Asset.BTC)
+parseErrorHandler :: SomeException -> IO (ReadOrder Asset.BTC)
 parseErrorHandler _ =  do
   putStrLn "no order"
-  return (Order Bid Asset.BTC (Time 0) (Amount 0) (Price 0))
+  return $ ReadOrder (Order Bid Asset.BTC (Time 0) (Amount 0) (Price 0))
