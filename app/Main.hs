@@ -43,7 +43,13 @@ main = do
         hFlush stdout
         readLn `catch` parseErrorHandler
       trades <- place order 
-      liftIO $ forM_ trades print >> putStrLn ""
+      liftIO $ do
+        putStrLn ""
+        putStrLn "Trades"
+        putStrLn "------"
+        forM_ trades print 
+        putStrLn "------"
+        putStrLn ""
       return ()
 
 parseErrorHandler :: SomeException -> IO (Order BTC)
