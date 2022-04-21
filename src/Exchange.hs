@@ -8,7 +8,7 @@ module Exchange where
 -- import Data.Monoid (Sum(..))
 -- import Data.Foldable (mapM_, foldMap)
 import Data.Typeable (Typeable, typeOf)
-import Data.List (insertBy, groupBy, mapAccumL)
+import Data.List (insertBy, groupBy)
 import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.List.NonEmpty as List (NonEmpty)
 import Data.Function (on)
@@ -151,7 +151,7 @@ matchOrders maker taker =
   let
     asset  = assetOf taker
     time   = timeOf taker
-    amount = min (amountOf taker) (amountOf maker)
+    amount = min (amountOf maker) (amountOf taker)
     price  = priceOf maker
     trade  = Trade asset time amount price
   in
@@ -173,14 +173,12 @@ tradeOrders makers taker =
           (makers', trade:trades', amount' + amountOf trade)
         Nothing -> 
           (maker:makers', trades', amount')
-    s0 = 
-      ([],[], (Amount 0))
     f maker state@(_, _, amt') = 
       go maker state (matchOrders maker (decAmountOf taker amt'))
-    (ms, ts, amt) = 
-      foldr f  s0 makers
+    (ms, ts, _) = 
+      foldr f ([],[], (Amount 0)) makers
   in
-    (reverse ms, reverse ts)
+    (reverse ms, ts)
     
 
 printOrder :: Typeable asset => Order asset -> IO ()
@@ -212,8 +210,8 @@ data Book asset = Book {
 } deriving (Show, Typeable)
 
 instance Foldable Book where
-  foldr f x0 (Book bids asks) = 
-    foldr f x0 (assetOf <$> bids ++ asks)
+  foldr f x0 book = 
+    foldr f x0 (assetOf <$> bids book ++ asks book)
 
 printBook :: (Show asset, Typeable asset) => Book asset -> IO ()
 printBook book = do
@@ -262,11 +260,11 @@ placeOrder order = do
   if isBid order
     then do
       let (as, ts) = tradeOrders (Maker <$> asks book) (Taker order)
-      State.put $ book { asks = ((\(Maker order) -> order) <$> as) }
+      State.put $ book { asks = ((\(Maker order') -> order') <$> as) }
       return ts
     else do
       let (bs, ts) = tradeOrders (Maker <$> bids book) (Taker order)
-      State.put $ book { bids = ((\(Maker order) -> order) <$> bs) }
+      State.put $ book { bids = ((\(Maker order') -> order') <$> bs) }
       return ts
 
 exchangeBook :: Exchange asset (Book asset)

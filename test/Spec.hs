@@ -92,11 +92,16 @@ main = hspec $ do
         trade = 
           Trade BTC (Time 0) (Amount 1) (Price 15)
         maker3 =
-          Maker (Order Bid BTC (Time 0) (Amount 2) (Price 15))
+          Maker (Order Bid BTC (Time 0) (Amount 4) (Price 15))
         taker3 =
-          Taker (Order Ask BTC (Time 0) (Amount 3) (Price 15))
-        trade3 = 
-          Trade BTC (Time 0) (Amount 2) (Price 15)
+          Taker (Order Ask BTC (Time 0) (Amount 5) (Price 15))
+        trade3 =
+            Trade BTC (Time 0) (Amount 4) (Price 15)
+        trades = 
+          [
+            Trade BTC (Time 0) (Amount 2) (Price 15)
+          , Trade BTC (Time 0) (Amount 3) (Price 15)
+          ]
 
       it "should match" $ do
 
@@ -110,14 +115,14 @@ main = hspec $ do
             tradeOrders [maker1] taker1
 
         trades1 `shouldBe` [trade]
-        makers1 `shouldBe` [setAmountOf maker1 (amountOf maker1 - amountOf trade)]
+        makers1 `shouldBe` [decAmountOf maker1 (amountOf trade)]
 
         let
           (makers2, trades2) =
             tradeOrders [maker2] taker2
 
         trades2 `shouldBe` [trade]
-        makers2 `shouldBe` [setAmountOf maker2 (amountOf maker2 - amountOf trade)]
+        makers2 `shouldBe` [decAmountOf maker2 (amountOf trade)]
 
         let
           (makers3, trades3) =
@@ -130,7 +135,8 @@ main = hspec $ do
           (makers4, trades4) =
             tradeOrders [maker1, maker3] taker3
 
-        trades4 `shouldBe` [trade3, trade]
+        trades4 `shouldBe` trades
+        makers4 `shouldBe` [setAmountOf maker3 1]
 
     context "when bid is higher than ask" $ do
 
@@ -147,11 +153,50 @@ main = hspec $ do
           Taker (Order Bid BTC (Time 0) (Amount 1) (Price 20))
         trade2 =
           Trade BTC (Time 0) (Amount 1) (Price 10)
+        maker3 =
+          Maker (Order Ask BTC (Time 0) (Amount 8) (Price 15))
+        taker3 =
+          Taker (Order Bid BTC (Time 0) (Amount 10) (Price 20))
+        trades =
+          [
+            Trade BTC (Time 0) (Amount 2) (Price 10)
+          , Trade BTC (Time 0) (Amount 8) (Price 15)
+          ]
 
       it "should match" $ do
 
         matchOrders maker1 taker1 `shouldBe` Just trade1
         matchOrders maker2 taker2 `shouldBe` Just trade2
+
+      it "should result in trades" $ do
+        
+        let
+          (makers1, trades1) =
+            tradeOrders [maker1] taker1
+
+        trades1 `shouldBe` [trade1]
+        makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
+
+        let
+          (makers2, trades2) =
+            tradeOrders [maker2] taker2
+
+        trades2 `shouldBe` [trade2]
+        makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
+
+        -- let
+          -- (makers3, trades3) =
+            -- tradeOrders [maker3] taker3
+
+        -- trades3 `shouldBe` [trade3]
+        -- makers3 `shouldBe` []
+
+        let
+          (makers4, trades4) =
+            tradeOrders [maker2, maker3] taker3
+
+        trades4 `shouldBe` trades
+        makers4 `shouldBe` []
 
   describe "Exchange" $ do
     
