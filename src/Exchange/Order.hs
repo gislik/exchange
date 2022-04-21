@@ -48,21 +48,24 @@ instance (Show asset, Typeable asset) => Show (Order asset) where
         then showParen True go
         else go
 
-instance Entry Order asset where
+instance GetEntry Order asset where
   sideOf   = orderSideOf
   assetOf  = orderAssetOf
   timeOf   = orderTimeOf
   amountOf = orderAmountOf
   priceOf  = orderPriceOf
-  setAmountOf order amount = order { orderAmountOf = amount }
 
-isBid :: Entry a asset => a asset -> Bool
+instance SetEntry Order asset where
+  setAmountOf order amount = order { orderAmountOf = amount }
+  setTimeOf   order time   = order { orderTimeOf = time }
+
+isBid :: GetEntry a asset => a asset -> Bool
 isBid order =
   case sideOf order of
     Bid -> True
     _   -> False
 
-isAsk :: Entry a asset => a asset -> Bool
+isAsk :: GetEntry a asset => a asset -> Bool
 isAsk order =
   case sideOf order of
     Ask -> True
@@ -72,24 +75,34 @@ newtype Maker asset =
   Maker (Order asset)
     deriving (Show, Eq)
 
-instance Entry Maker asset where
+instance GetEntry Maker asset where
   sideOf   (Maker order) = sideOf order
   assetOf  (Maker order) = assetOf order
   timeOf   (Maker order) = timeOf order
   amountOf (Maker order) = amountOf order
   priceOf  (Maker order) = priceOf order
+
+instance SetEntry Maker asset where
   setAmountOf (Maker order) amount = Maker order { orderAmountOf = amount }
+  setTimeOf   (Maker order) time   = Maker order { orderTimeOf = time }
+
+instance Entry Maker asset
 
 newtype Taker asset = 
   Taker (Order asset)
 
-instance Entry Taker asset where
+instance GetEntry Taker asset where
   sideOf   (Taker order) = sideOf order
   assetOf  (Taker order) = assetOf order
   timeOf   (Taker order) = timeOf order
   amountOf (Taker order) = amountOf order
   priceOf  (Taker order) = priceOf order
+
+instance SetEntry Taker asset where
   setAmountOf (Taker order) amount = Taker order { orderAmountOf = amount }
+  setTimeOf (Taker order) time     = Taker order { orderTimeOf = time }
+
+instance Entry Taker asset where
 
 match :: Maker asset -> Taker asset -> Maybe (Trade asset)
 match maker taker = 

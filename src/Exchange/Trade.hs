@@ -46,13 +46,16 @@ instance (Show asset, Typeable asset) => Show (Trade asset) where
         then showParen True go
         else go
 
-instance Entry Trade asset where
+instance GetEntry Trade asset where
   -- sideOf = tradeSideOf
   sideOf   = const Bid -- TODO: hardcoded
   assetOf  = tradeAssetOf
   timeOf   = tradeTimeOf
   amountOf = tradeAmountOf
   priceOf  = tradePriceOf
+
+instance SetEntry Trade asset where
   setAmountOf trade amount = trade { tradeAmountOf = amount }
+  setTimeOf trade time     = trade { tradeTimeOf = time }
 
 

@@ -40,7 +40,7 @@ newtype Price =
 -- Time
 newtype Time = 
   Time Int
-    deriving (Show, Eq)
+    deriving (Show, Eq, Num, Enum)
 
 data Side =
     Bid 

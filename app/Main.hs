@@ -40,13 +40,13 @@ book =
 main :: IO ()
 main = do
   runWith book $ do
-    forM_ [1..] $ \i -> do
+    forM_ [Time 1..] $ \time -> do
       book' <- orderbook
       order <- liftIO $ do
         Book.print book'
         putStr "Enter trade: "
         hFlush stdout
-        readLn `catch` parseErrorHandler
+        flip setTimeOf time <$> readLn `catch` parseErrorHandler
       trades <- place order 
       liftIO $ do
         putStrLn ""
