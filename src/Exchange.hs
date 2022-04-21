@@ -181,22 +181,22 @@ tradeOrders makers taker =
     (reverse ms, ts)
     
 
-printOrder :: Typeable asset => Order asset -> IO ()
+printOrder :: Typeable asset => Maker asset -> IO ()
 printOrder order = do
   putStr $ show (sideOf order)
   putStr $ " (" ++ show (priceOf order) ++ ")"
   putStr $ " (" ++ show (amountOf order) ++ ")"
   putStrLn ""
 
-sumOrderAmount :: List.NonEmpty (Order asset) -> Order asset
+sumOrderAmount :: List.NonEmpty (Maker asset) -> Maker asset
 sumOrderAmount orders = 
   let
     order  = NonEmpty.head orders
     amount = foldMap amountOf orders
   in
-    order { orderAmountOf = amount }
+    setAmountOf order amount
 
-groupOrdersBy :: Eq b => (Order asset -> b) -> [Order asset] -> [List.NonEmpty (Order asset)]
+groupOrdersBy :: Eq b => (Maker asset -> b) -> [Maker asset] -> [List.NonEmpty (Maker asset)]
 groupOrdersBy f orders = 
   NonEmpty.fromList <$> groupBy (equalOn f) orders
 
@@ -205,8 +205,8 @@ equalOn f = (==) `on` f
 
 -- Book
 data Book asset = Book {
-    bids :: [Order asset]
-  , asks :: [Order asset]
+    bids :: [Maker asset]
+  , asks :: [Maker asset]
 } deriving (Show, Typeable)
 
 instance Foldable Book where
@@ -228,7 +228,7 @@ printBook book = do
 emptyBook :: Book asset
 emptyBook = Book [] []
 
-newOrder :: Order asset -> Book asset -> Book asset
+newOrder :: Maker asset -> Book asset -> Book asset
 newOrder order book | isBid order = 
   book { bids = insertBy (comparing (Down . priceOf)) order (bids book) }
 newOrder order book | otherwise = 
@@ -259,12 +259,12 @@ placeOrder order = do
   book <- State.get 
   if isBid order
     then do
-      let (as, ts) = tradeOrders (Maker <$> asks book) (Taker order)
-      State.put $ book { asks = ((\(Maker order') -> order') <$> as) }
+      let (as, ts) = tradeOrders (asks book) (Taker order)
+      State.put $ book { asks = as }
       return ts
     else do
-      let (bs, ts) = tradeOrders (Maker <$> bids book) (Taker order)
-      State.put $ book { bids = ((\(Maker order') -> order') <$> bs) }
+      let (bs, ts) = tradeOrders (bids book) (Taker order)
+      State.put $ book { bids = bs }
       return ts
 
 exchangeBook :: Exchange asset (Book asset)

@@ -212,7 +212,7 @@ main = hspec $ do
         book = 
           foldr newOrder emptyBook 
             [
-              Order Bid BTC (Time 0) (Amount 2) (Price 10)
+              Maker (Order Bid BTC (Time 0) (Amount 2) (Price 10))
             ]
 
       it "should have a book with one entry" $ do
@@ -226,8 +226,8 @@ main = hspec $ do
         book = 
           foldr newOrder emptyBook 
             [
-              Order Bid BTC (Time 0) (Amount 2) (Price 10)
-            , Order Ask BTC (Time 0) (Amount 2) (Price 20)
+              Maker (Order Bid BTC (Time 0) (Amount 2) (Price 10))
+            , Maker (Order Ask BTC (Time 0) (Amount 2) (Price 20))
             ]
 
       it "should have a book with two entries" $ do
