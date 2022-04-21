@@ -250,10 +250,10 @@ printBook book = do
   putStrLn typeOfBook
   putStrLn (replicate (length typeOfBook) '=')
   mapM_ printOrder $ 
-    sumOrderAmount <$> groupOrdersBy priceOf (asks book)
+    sumOrderAmount <$> groupOrdersBy priceOf (reverse $ asks book)
   putStrLn ""
   mapM_ printOrder $ 
-    sumOrderAmount <$> groupOrdersBy priceOf (reverse (bids book))
+    sumOrderAmount <$> groupOrdersBy priceOf (bids book)
   putStrLn ""
 
 emptyBook :: Book asset
