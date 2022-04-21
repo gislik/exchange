@@ -1,5 +1,10 @@
+import qualified Exchange.Asset as Asset
+import qualified Exchange.Order as Order
+import qualified Exchange.Book  as Book
 import Test.QuickCheck 
 import Test.Hspec
+import Exchange.Trade (Trade(Trade))
+import Exchange.Order (Order(Order))
 import Exchange
 
 main :: IO ()
@@ -29,30 +34,30 @@ main = hspec $ do
 
     let
       btcbid =
-        Order Bid BTC (Time 1) (Amount 0) (Price 0)
+        Order Bid Asset.BTC (Time 1) (Amount 0) (Price 0)
       ethbid =
-        Order Bid ETH (Time 2) (Amount 0) (Price 0)
+        Order Bid Asset.ETH (Time 2) (Amount 0) (Price 0)
       btcask =
-        Order Ask BTC (Time 3) (Amount 0) (Price 0)
+        Order Ask Asset.BTC (Time 3) (Amount 0) (Price 0)
       ethask =
-        Order Ask ETH (Time 4) (Amount 0) (Price 0)
+        Order Ask Asset.ETH (Time 4) (Amount 0) (Price 0)
 
     it "should have an asset" $ do
 
-      assetOf btcbid `shouldBe` BTC
-      assetOf ethbid `shouldBe` ETH
-      assetOf btcask `shouldBe` BTC
-      assetOf ethask `shouldBe` ETH
+      assetOf btcbid `shouldBe` Asset.BTC
+      assetOf ethbid `shouldBe` Asset.ETH
+      assetOf btcask `shouldBe` Asset.BTC
+      assetOf ethask `shouldBe` Asset.ETH
 
     it "should have correct sides" $ do
 
       sideOf btcbid `shouldBe` Bid
       sideOf btcask `shouldBe` Ask
         
-      isBid btcbid `shouldBe` True
-      isAsk btcbid `shouldBe` False
-      isBid btcask `shouldBe` False
-      isAsk btcask `shouldBe` True
+      Order.isBid btcbid `shouldBe` True
+      Order.isAsk btcbid `shouldBe` False
+      Order.isBid btcask `shouldBe` False
+      Order.isAsk btcask `shouldBe` True
 
     it "should have time" $ do
 
@@ -65,31 +70,31 @@ main = hspec $ do
 
       let 
         maker1 = 
-          Maker (Order Bid BTC (Time 0) (Amount 1) (Price 10))
+          Order.Maker (Order Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
         taker1 = 
-          Taker (Order Ask BTC (Time 0) (Amount 1) (Price 20))
+          Order.Taker (Order Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
         maker2 =
-          Maker (Order Ask BTC (Time 0) (Amount 1) (Price 20))
+          Order.Maker (Order Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
         taker2 =
-          Taker (Order Bid BTC (Time 0) (Amount 1) (Price 10))
+          Order.Taker (Order Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
 
       it "should not match" $ do
       
-        matchOrders maker1 taker1 `shouldBe` Nothing
-        matchOrders maker2 taker2 `shouldBe` Nothing
+        Order.match maker1 taker1 `shouldBe` Nothing
+        Order.match maker2 taker2 `shouldBe` Nothing
 
       it "should result in no trades and unchanged makers" $ do
 
         let
           (makers1, trades1) = 
-            tradeOrders [maker1] taker1
+            Order.trade [maker1] taker1
 
         trades1 `shouldBe` []
         makers1 `shouldBe` [maker1]
 
         let
           (makers2, trades2) = 
-            tradeOrders [maker2] taker2
+            Order.trade [maker2] taker2
 
         trades2 `shouldBe` []
         makers2 `shouldBe` [maker2]
@@ -99,60 +104,60 @@ main = hspec $ do
 
       let
         maker1 =
-          Maker (Order Bid BTC (Time 1) (Amount 2) (Price 15))
+          Order.Maker (Order Bid Asset.BTC (Time 1) (Amount 2) (Price 15))
         taker1 =
-          Taker (Order Ask BTC (Time 2) (Amount 1) (Price 15))
+          Order.Taker (Order Ask Asset.BTC (Time 2) (Amount 1) (Price 15))
         trade1 = 
-          Trade BTC (Time 2) (Amount 1) (Price 15)
+          Trade Asset.BTC (Time 2) (Amount 1) (Price 15)
         maker2 =
-          Maker (Order Ask BTC (Time 3) (Amount 2) (Price 15))
+          Order.Maker (Order Ask Asset.BTC (Time 3) (Amount 2) (Price 15))
         taker2 =
-          Taker (Order Bid BTC (Time 4) (Amount 1) (Price 15))
+          Order.Taker (Order Bid Asset.BTC (Time 4) (Amount 1) (Price 15))
         trade2 = 
-          Trade BTC (Time 4) (Amount 1) (Price 15)
+          Trade Asset.BTC (Time 4) (Amount 1) (Price 15)
         maker3 =
-          Maker (Order Bid BTC (Time 5) (Amount 4) (Price 15))
+          Order.Maker (Order Bid Asset.BTC (Time 5) (Amount 4) (Price 15))
         taker3 =
-          Taker (Order Ask BTC (Time 6) (Amount 5) (Price 15))
+          Order.Taker (Order Ask Asset.BTC (Time 6) (Amount 5) (Price 15))
         trade3 =
-            Trade BTC (Time 6) (Amount 4) (Price 15)
+            Trade Asset.BTC (Time 6) (Amount 4) (Price 15)
         trades = 
           [
-            Trade BTC (Time 6) (Amount 2) (Price 15)
-          , Trade BTC (Time 6) (Amount 3) (Price 15)
+            Trade Asset.BTC (Time 6) (Amount 2) (Price 15)
+          , Trade Asset.BTC (Time 6) (Amount 3) (Price 15)
           ]
 
       it "should match" $ do
 
-        matchOrders maker1 taker1 `shouldBe` Just trade1
-        matchOrders maker2 taker2 `shouldBe` Just trade2
+        Order.match maker1 taker1 `shouldBe` Just trade1
+        Order.match maker2 taker2 `shouldBe` Just trade2
 
       it "should result in trades" $ do
 
         let
           (makers1, trades1) =
-            tradeOrders [maker1] taker1
+            Order.trade [maker1] taker1
 
         trades1 `shouldBe` [trade1]
         makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
 
         let
           (makers2, trades2) =
-            tradeOrders [maker2] taker2
+            Order.trade [maker2] taker2
 
         trades2 `shouldBe` [trade2]
         makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
 
         let
           (makers3, trades3) =
-            tradeOrders [maker3] taker3
+            Order.trade [maker3] taker3
 
         trades3 `shouldBe` [trade3]
         makers3 `shouldBe` []
 
         let
           (makers4, trades4) =
-            tradeOrders [maker1, maker3] taker3
+            Order.trade [maker1, maker3] taker3
 
         trades4 `shouldBe` trades 
         makers4 `shouldBe` [setAmountOf maker3 1]
@@ -161,58 +166,58 @@ main = hspec $ do
 
       let
         maker1 =
-          Maker (Order Bid BTC (Time 0) (Amount 2) (Price 20))
+          Order.Maker (Order Bid Asset.BTC (Time 0) (Amount 2) (Price 20))
         taker1 =
-          Taker (Order Ask BTC (Time 0) (Amount 1) (Price 10))
+          Order.Taker (Order Ask Asset.BTC (Time 0) (Amount 1) (Price 10))
         trade1 =
-          Trade BTC (Time 0) (Amount 1) (Price 20)
+          Trade Asset.BTC (Time 0) (Amount 1) (Price 20)
         maker2 =
-          Maker (Order Ask BTC (Time 0) (Amount 2) (Price 10))
+          Order.Maker (Order Ask Asset.BTC (Time 0) (Amount 2) (Price 10))
         taker2 =
-          Taker (Order Bid BTC (Time 0) (Amount 1) (Price 20))
+          Order.Taker (Order Bid Asset.BTC (Time 0) (Amount 1) (Price 20))
         trade2 =
-          Trade BTC (Time 0) (Amount 1) (Price 10)
+          Trade Asset.BTC (Time 0) (Amount 1) (Price 10)
         maker3 =
-          Maker (Order Ask BTC (Time 0) (Amount 8) (Price 15))
+          Order.Maker (Order Ask Asset.BTC (Time 0) (Amount 8) (Price 15))
         taker3 =
-          Taker (Order Bid BTC (Time 0) (Amount 10) (Price 20))
+          Order.Taker (Order Bid Asset.BTC (Time 0) (Amount 10) (Price 20))
         trades =
           [
-            Trade BTC (Time 0) (Amount 2) (Price 10)
-          , Trade BTC (Time 0) (Amount 8) (Price 15)
+            Trade Asset.BTC (Time 0) (Amount 2) (Price 10)
+          , Trade Asset.BTC (Time 0) (Amount 8) (Price 15)
           ]
 
       it "should match" $ do
 
-        matchOrders maker1 taker1 `shouldBe` Just trade1
-        matchOrders maker2 taker2 `shouldBe` Just trade2
+        Order.match maker1 taker1 `shouldBe` Just trade1
+        Order.match maker2 taker2 `shouldBe` Just trade2
 
       it "should result in trades" $ do
         
         let
           (makers1, trades1) =
-            tradeOrders [maker1] taker1
+            Order.trade [maker1] taker1
 
         trades1 `shouldBe` [trade1]
         makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
 
         let
           (makers2, trades2) =
-            tradeOrders [maker2] taker2
+            Order.trade [maker2] taker2
 
         trades2 `shouldBe` [trade2]
         makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
 
         -- let
           -- (makers3, trades3) =
-            -- tradeOrders [maker3] taker3
+            -- Order.trade [maker3] taker3
 
         -- trades3 `shouldBe` [trade3]
         -- makers3 `shouldBe` []
 
         let
           (makers4, trades4) =
-            tradeOrders [maker2, maker3] taker3
+            Order.trade [maker2, maker3] taker3
 
         trades4 `shouldBe` trades
         makers4 `shouldBe` []
@@ -230,9 +235,9 @@ main = hspec $ do
 
       let 
         book = 
-          foldr newOrder emptyBook 
+          foldr Book.newOrder Book.empty 
             [
-              Maker (Order Bid BTC (Time 0) (Amount 2) (Price 10))
+              Order.Maker (Order Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
             ]
 
       it "should have a book with one entry" $ do
@@ -245,10 +250,10 @@ main = hspec $ do
 
       let
         book = 
-          foldr newOrder emptyBook 
+          foldr Book.newOrder Book.empty 
             [
-              Maker (Order Bid BTC (Time 0) (Amount 2) (Price 10))
-            , Maker (Order Ask BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            , Order.Maker (Order Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
             ]
 
       it "should have a book with two entries" $ do

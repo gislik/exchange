@@ -2,12 +2,17 @@
 
 module Main where
 
+import qualified Exchange.Asset as Asset
+import qualified Exchange.Order as Order
+import qualified Exchange.Book  as Book
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (forM_)
 import Control.Exception (catch, SomeException)
 import System.IO (getLine, hFlush, stdout)
 import GHC.Read (Read, readPrec)
 import Exchange
+import Exchange.Order (Order(Order))
+import Exchange.Book (Book)
 
 instance Read asset => Read (Order asset) where
   readPrec =
@@ -18,17 +23,17 @@ instance Read asset => Read (Order asset) where
       (Amount <$> readPrec) <*> 
       (Price <$> readPrec)
 
-book :: Book BTC
+book :: Book Asset.BTC
 book = 
-  foldr newOrder emptyBook
+  foldr Book.newOrder Book.empty
     [
-      Maker (Order Ask BTC (Time 3) (Amount 50) (Price 102))
-    , Maker (Order Ask BTC (Time 2) (Amount 30) (Price 102))
-    , Maker (Order Ask BTC (Time 3) (Amount 10) (Price 101))
-    , Maker (Order Ask BTC (Time 1) (Amount 10) (Price 101))
-    , Maker (Order Bid BTC (Time 1) (Amount 10) (Price 99))
-    , Maker (Order Bid BTC (Time 2) (Amount 20) (Price 98))
-    , Maker (Order Bid BTC (Time 3) (Amount 30) (Price 97))
+      Order.Maker (Order Ask Asset.BTC (Time 3) (Amount 50) (Price 102))
+    , Order.Maker (Order Ask Asset.BTC (Time 2) (Amount 30) (Price 102))
+    , Order.Maker (Order Ask Asset.BTC (Time 3) (Amount 10) (Price 101))
+    , Order.Maker (Order Ask Asset.BTC (Time 1) (Amount 10) (Price 101))
+    , Order.Maker (Order Bid Asset.BTC (Time 1) (Amount 10) (Price 99))
+    , Order.Maker (Order Bid Asset.BTC (Time 2) (Amount 20) (Price 98))
+    , Order.Maker (Order Bid Asset.BTC (Time 3) (Amount 30) (Price 97))
     ]
 
 
@@ -38,7 +43,7 @@ main = do
     forM_ [1..] $ \i -> do
       book' <- orderbook
       order <- liftIO $ do
-        printBook book'
+        Book.print book'
         putStr "Enter trade: "
         hFlush stdout
         readLn `catch` parseErrorHandler
@@ -52,7 +57,7 @@ main = do
         putStrLn ""
       return ()
 
-parseErrorHandler :: SomeException -> IO (Order BTC)
+parseErrorHandler :: SomeException -> IO (Order Asset.BTC)
 parseErrorHandler e =  do
   putStrLn "no order"
-  return (Order Bid BTC (Time 0) (Amount 0) (Price 0))
+  return (Order Bid Asset.BTC (Time 0) (Amount 0) (Price 0))

@@ -26,6 +26,12 @@ source-repository head
 library
   exposed-modules:
       Exchange
+      Exchange.Asset
+      Exchange.Book
+      Exchange.Entry
+      Exchange.Order
+      Exchange.Trade
+      Exchange.Type
   other-modules:
       Paths_exchange
   hs-source-dirs:
