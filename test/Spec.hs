@@ -223,7 +223,8 @@ main = hspec $ do
 
       it "should have an empty book" $ do
 
-        length (run orderbook) `shouldBe` 0
+        book' <- run orderbook
+        length book' `shouldBe` 0
         
     context "when a single order has been placed" $ do
 
@@ -236,7 +237,8 @@ main = hspec $ do
 
       it "should have a book with one entry" $ do
 
-        length (runWith book orderbook) `shouldBe` 1
+        book' <- runWith book orderbook
+        length book' `shouldBe` 1
 
 
     context "when two orders has been placed" $ do
@@ -251,4 +253,5 @@ main = hspec $ do
 
       it "should have a book with two entries" $ do
 
-        length (runWith book orderbook) `shouldBe` 2
+        book' <- runWith book orderbook
+        length book' `shouldBe` 2

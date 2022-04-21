@@ -26,7 +26,6 @@ source-repository head
 library
   exposed-modules:
       Exchange
-      Lib
   other-modules:
       Paths_exchange
   hs-source-dirs:

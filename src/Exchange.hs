@@ -12,22 +12,22 @@ import Data.Typeable (Typeable, typeOf)
 import Data.List (insertBy, groupBy)
 import Data.Function (on)
 import Data.Ord (Down(Down), comparing)
-import Control.Monad.Trans.State.Strict (State)
+import Control.Monad.Trans.State.Strict (StateT)
 
 -- Assets
 data ETH = 
   ETH   
-    deriving (Show, Eq)
+    deriving (Show, Eq, Read)
 
 data BTC = 
   BTC 
-    deriving (Show, Eq)
+    deriving (Show, Eq, Read)
 
 
 -- Amount
 newtype Amount = 
   Amount Double 
-    deriving (Show, Eq, Ord, Num)
+    deriving (Show, Eq, Ord, Num, Read)
 
 instance Semigroup Amount where
   Amount d <> Amount e = 
@@ -40,7 +40,7 @@ instance Monoid Amount where
 -- Price
 newtype Price = 
   Price Double 
-    deriving (Show, Eq, Ord, Num)
+    deriving (Show, Eq, Ord, Num, Read)
 
 -- Time
 newtype Time = 
@@ -50,7 +50,7 @@ newtype Time =
 data Side =
     Bid 
   | Ask
-  deriving (Show, Eq)
+  deriving (Show, Eq, Read)
 
 -- Entry
 class Entry a asset where
@@ -78,7 +78,22 @@ data Trade asset =
     , tradeAmountOf :: Amount 
     , tradePriceOf :: Price
     }
-  deriving (Show, Eq)
+  deriving (Eq)
+
+instance (Show asset, Typeable asset) => Show (Trade asset) where
+  showsPrec i trade = 
+    let
+      go =
+        showString (head . words . show $ typeOf trade) . showChar ' ' . 
+        -- showsPrec i (sideOf trade) . showChar ' ' . 
+        showsPrec i (assetOf trade) . showChar ' ' .
+        showsPrec 11 (timeOf trade) . showChar ' ' .
+        showsPrec 11 (amountOf trade) . showChar ' ' .
+        showsPrec 11 (priceOf trade) 
+    in
+      if i > 0
+        then showParen True go
+        else go
 
 instance Entry Trade asset where
   -- sideOf = tradeSideOf
@@ -105,12 +120,12 @@ instance (Show asset, Typeable asset) => Show (Order asset) where
   showsPrec i order = 
     let
       go =
-        showString (show $ typeOf order) . showChar ' ' . 
+        showString (head . words . show $ typeOf order) . showChar ' ' . 
         showsPrec i (sideOf order) . showChar ' ' . 
         showsPrec i (assetOf order) . showChar ' ' .
-        showsPrec i (timeOf order) . showChar ' ' .
-        showsPrec i (amountOf order) . showChar ' ' .
-        showsPrec i (priceOf order) 
+        showsPrec 11 (timeOf order) . showChar ' ' .
+        showsPrec 11 (amountOf order) . showChar ' ' .
+        showsPrec 11 (priceOf order) 
     in
       if i > 0
         then showParen True go
@@ -242,7 +257,8 @@ printBook book = do
   putStrLn ""
 
 emptyBook :: Book asset
-emptyBook = Book [] []
+emptyBook = 
+  Book [] []
 
 newOrder :: Maker asset -> Book asset -> Book asset
 newOrder order book | isBid order = 
@@ -252,21 +268,23 @@ newOrder order book | otherwise =
 
 
 -- Exchange
-type Exchange asset = 
-  State (Book asset) 
+type Exchange asset m = 
+  StateT (Book asset) m 
 
-runWith :: Book asset -> Exchange asset a -> a
-runWith book ex = State.evalState ex book
+runWith :: Monad m => Book asset -> Exchange asset m a -> m a
+runWith book ex = 
+  State.evalStateT ex book
 
-run :: Exchange asset a -> a
-run = runWith emptyBook
+run :: Monad m => Exchange asset m a -> m a
+run = 
+  runWith emptyBook
 
-empty :: Exchange asset ()
+empty :: Monad m => Exchange asset m ()
 empty = 
   return ()
 
 
-place :: Order asset -> Exchange asset [Trade asset]
+place :: Monad m => Order asset -> Exchange asset m [Trade asset]
 place order = do
   book <- State.get 
   if isBid order
@@ -279,6 +297,6 @@ place order = do
       State.put $ book { bids = bs }
       return ts
 
-orderbook :: Exchange asset (Book asset)
+orderbook :: Monad m => Exchange asset m (Book asset)
 orderbook =
   State.get
