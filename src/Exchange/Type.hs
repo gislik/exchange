@@ -29,6 +29,12 @@ newtype Time =
   Time Int
     deriving (Show, Eq, Num, Enum)
 
+-- Style
+data Style =
+    Limit
+  | FillAndKill
+    deriving (Eq)
+
 data Side =
     Bid 
   | Ask

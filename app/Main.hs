@@ -9,7 +9,7 @@ import Control.Exception (catch, SomeException)
 import System.IO (hFlush, stdout)
 import GHC.Read (readPrec)
 import Exchange
-import Exchange.Order (Order(Order))
+import Exchange.Order (Order)
 import Exchange.Book (Book)
 
 
@@ -22,7 +22,7 @@ instance Read asset => Read (ReadOrder asset) where
   readPrec =
     let
       order =
-        Order <$> 
+        Order.limit <$> 
           readPrec <*> 
           readPrec <*> 
           pure (Time 0) <*> 
@@ -35,13 +35,13 @@ book :: Book Asset.BTC
 book = 
   foldr Book.newOrder Book.empty
     [
-      Order.Maker (Order Ask Asset.BTC (Time 3) (Amount 50) (Price 102))
-    , Order.Maker (Order Ask Asset.BTC (Time 2) (Amount 30) (Price 102))
-    , Order.Maker (Order Ask Asset.BTC (Time 3) (Amount 10) (Price 101))
-    , Order.Maker (Order Ask Asset.BTC (Time 1) (Amount 10) (Price 101))
-    , Order.Maker (Order Bid Asset.BTC (Time 1) (Amount 10) (Price 99))
-    , Order.Maker (Order Bid Asset.BTC (Time 2) (Amount 20) (Price 98))
-    , Order.Maker (Order Bid Asset.BTC (Time 3) (Amount 30) (Price 97))
+      Order.Maker (Order.limit Ask Asset.BTC (Time 3) (Amount 50) (Price 102))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 2) (Amount 30) (Price 102))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 3) (Amount 10) (Price 101))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 1) (Amount 10) (Price 101))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 1) (Amount 10) (Price 99))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 2) (Amount 20) (Price 98))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (Amount 30) (Price 97))
     ]
 
 
@@ -68,4 +68,4 @@ main = do
 parseErrorHandler :: SomeException -> IO (ReadOrder Asset.BTC)
 parseErrorHandler _ =  do
   putStrLn "no order"
-  return $ ReadOrder (Order Bid Asset.BTC (Time 0) (Amount 0) (Price 0))
+  return $ ReadOrder (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 0))

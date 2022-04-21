@@ -8,6 +8,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.List.NonEmpty as List (NonEmpty)
 import Data.Typeable (Typeable, typeOf)
 import Data.Function (on)
+import Control.Arrow ((***))
 import Exchange.Trade (Trade(Trade))
 import Exchange.Entry 
 import Exchange.Type
@@ -20,6 +21,7 @@ data Order asset =
     , orderTimeOf :: Time
     , orderAmountOf :: Amount
     , orderPriceOf :: Price
+    , orderStyleOf :: Style
     } 
   deriving (Eq, Typeable)
 
@@ -60,6 +62,25 @@ isAsk order =
   case sideOf order of
     Ask -> True
     _   -> False
+
+limit :: Side -> asset -> Time -> Amount -> Price -> Order asset
+limit side asset time amount price =
+  Order {
+    orderSideOf   = side
+  , orderAssetOf  = asset
+  , orderTimeOf   = time
+  , orderAmountOf = amount
+  , orderPriceOf  = price
+  , orderStyleOf  = Limit
+  }
+
+fillAndKill :: Side -> asset -> Time -> Amount -> Price -> Order asset
+fillAndKill side asset time amount price =
+  let 
+    order = 
+      limit side asset time amount price 
+    in
+      order { orderStyleOf = FillAndKill }
 
 -- Maker
 newtype Maker asset = 
@@ -103,7 +124,9 @@ print order = do
 
 -- Taker
 newtype Taker asset = 
-  Taker (Order asset)
+  Taker {
+    getTakerOrder :: Order asset
+  }
 
 instance GetEntry Taker asset where
   sideOf   (Taker order) = sideOf order
@@ -119,6 +142,9 @@ instance SetEntry Taker asset where
 instance Entry Taker asset where
 
 -- Makers and Takers
+
+toMaker :: Taker asset -> Maker asset
+toMaker taker = Maker (getTakerOrder taker)
 
 match :: Maker asset -> Taker asset -> Maybe (Trade asset)
 match maker taker = 
@@ -139,27 +165,46 @@ match maker taker =
 trade :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
 trade makers taker = 
   let
-    f maker state@(_, _, amt') = 
-      engine_ maker state (match maker (decAmountOf taker amt'))
-    (ms, ts, _) = 
-      foldr f ([],[], (Amount 0)) (reverse makers)
+    order = 
+      getTakerOrder taker
+    f maker state = 
+      engine_ maker state (match maker (decAmountOf taker (accAmount state)))
+    (makers', trades', amount') = 
+      foldr f mempty (reverse makers)
   in
-    (reverse ms, reverse ts)
+    reverse *** reverse $
+      case orderStyleOf order of
+        Limit | (not . null) trades' && amountOf taker > amount' ->
+          (toMaker (decAmountOf taker amount'):makers', trades')
+        Limit | amountOf taker > amount' ->
+          (toMaker taker:makers', trades')
+        otherwise ->
+          (makers', trades')
     
--- _engine_ is the workhorse of the order matching engine.
--- it is *nont* meant to be called from outside this module.
+type EngineState asset = 
+  ([Maker asset], [Trade asset], Amount)
+
+accAmount :: EngineState asset -> Amount
+accAmount state = 
+  case state of
+    (_, _, amount) -> amount
+    
+
+engine_ :: Maker asset -> EngineState asset -> Maybe (Trade asset) -> EngineState asset
 engine_ maker (makers', trades', amount') mtrade =
   let
-    decAmountBy maker trade' = 
-      decAmountOf maker (amountOf trade')
-    remainingAmount maker trade' =
-      amountOf maker - amountOf trade'
+    decAmountBy maker' trade' = 
+      decAmountOf maker' (amountOf trade')
+    accAmountOf trade' =
+      amount' + amountOf trade'
+    isMakerAfter trade' =
+      amountOf maker - amountOf trade' > 0
   in
     case mtrade of 
-      Just trade' | remainingAmount maker trade' > 0 -> 
-        (decAmountBy maker trade':makers', trade':trades', amountOf trade' + amount')
+      Just trade' | isMakerAfter trade' -> 
+        (decAmountBy maker trade':makers', trade':trades', accAmountOf trade')
       Just trade' ->
-        (makers', trade':trades', amount' + amountOf trade')
-      Nothing -> 
+        (makers', trade':trades', accAmountOf trade')
+      Nothing | otherwise -> 
         (maker:makers', trades', amount')
 
