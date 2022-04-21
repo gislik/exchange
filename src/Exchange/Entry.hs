@@ -15,24 +15,24 @@ class GetEntry a asset where
   priceOf  :: a asset -> Price
 
 class SetEntry a asset where
-  setAmountOf :: a asset -> Amount -> a asset
-  setTimeOf :: a asset -> Time -> a asset
+  setAmountOf :: Amount -> a asset -> a asset
+  setTimeOf   :: Time -> a asset -> a asset
 
 -- amount
-incAmountOf :: Entry a asset => a asset -> Amount -> a asset
-incAmountOf entry amount =
-  setAmountOf entry (amountOf entry + amount)
+incAmountOf :: Entry a asset => Amount -> a asset -> a asset
+incAmountOf amount entry =
+  setAmountOf (amountOf entry + amount) entry
 
-decAmountOf :: Entry a asset => a asset -> Amount -> a asset
-decAmountOf entry amount =
-  setAmountOf entry (amountOf entry - amount)
+decAmountOf :: Entry a asset => Amount -> a asset -> a asset
+decAmountOf amount entry =
+  setAmountOf (amountOf entry - amount) entry 
 
 
 -- time
-incTimeOf :: Entry a asset => a asset -> Time -> a asset
-incTimeOf entry time =
-  setTimeOf entry (timeOf entry + time)
+incTimeOf :: Entry a asset => Time -> a asset -> a asset
+incTimeOf time entry =
+  setTimeOf (timeOf entry + time) entry 
 
-decTimeOf :: Entry a asset => a asset -> Time -> a asset
-decTimeOf entry time =
-  setTimeOf entry (timeOf entry - time)
+decTime :: Entry a asset => Time -> a asset -> a asset
+decTime time entry =
+  setTimeOf (timeOf entry - time) entry 

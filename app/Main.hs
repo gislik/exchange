@@ -54,7 +54,7 @@ main = do
         Book.print book'
         putStr "Enter trade: "
         hFlush stdout
-        flip setTimeOf time . getOrder  <$> readLn `catch` parseErrorHandler
+        setTimeOf time . getOrder <$> readLn `catch` parseErrorHandler
       trades <- place order 
       liftIO $ do
         putStrLn ""

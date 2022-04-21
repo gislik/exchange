@@ -41,7 +41,7 @@ instance GetEntry Trade asset where
   priceOf  = tradePriceOf
 
 instance SetEntry Trade asset where
-  setAmountOf trade amount = trade { tradeAmountOf = amount }
-  setTimeOf trade time     = trade { tradeTimeOf = time }
+  setAmountOf amount trade = trade { tradeAmountOf = amount }
+  setTimeOf time trade     = trade { tradeTimeOf = time }
 
 

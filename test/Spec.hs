@@ -148,35 +148,35 @@ main = hspec $ do
             Order.trade [maker1] taker1
 
         trades1 `shouldBe` [trade1]
-        makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
+        makers1 `shouldBe` [decAmountOf (amountOf trade1) maker1]
 
         let
           (makers2, trades2) =
             Order.trade [maker2] taker2
 
         trades2 `shouldBe` [trade2]
-        makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
+        makers2 `shouldBe` [decAmountOf (amountOf trade2) maker2]
 
         let
           (makers3, trades3) =
             Order.trade [maker3] taker3
 
         trades3 `shouldBe` [trade3]
-        makers3 `shouldBe` [Order.toMaker $ decAmountOf taker3 (amountOf trade3)]
+        makers3 `shouldBe` [Order.toMaker $ decAmountOf (amountOf trade3) taker3]
 
         let
           (makers4, trades4) =
             Order.trade maker4 taker4
 
         trades4 `shouldBe` trades 
-        makers4 `shouldBe` [setAmountOf maker3 1]
+        makers4 `shouldBe` [setAmountOf 1 maker3]
 
         let
           (makers5, trades5) =
             Order.trade [maker5] taker5
 
         trades5 `shouldBe` [trade5]
-        makers5 `shouldBe` [Order.toMaker $ decAmountOf taker5 (amountOf trade5)]
+        makers5 `shouldBe` [Order.toMaker $ decAmountOf (amountOf trade5) taker5]
 
     context "when bid is higher than ask {Limit}" $ do
 
@@ -215,14 +215,14 @@ main = hspec $ do
             Order.trade [maker1] taker1
 
         trades1 `shouldBe` [trade1]
-        makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
+        makers1 `shouldBe` [decAmountOf (amountOf trade1) maker1]
 
         let
           (makers2, trades2) =
             Order.trade [maker2] taker2
 
         trades2 `shouldBe` [trade2]
-        makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
+        makers2 `shouldBe` [decAmountOf (amountOf trade2) maker2]
 
         -- let
           -- (makers3, trades3) =
@@ -303,14 +303,14 @@ main = hspec $ do
             Order.trade [maker1] taker1
 
         trades1 `shouldBe` [trade1]
-        makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
+        makers1 `shouldBe` [decAmountOf (amountOf trade1) maker1]
 
         let
           (makers2, trades2) =
             Order.trade [maker2] taker2
 
         trades2 `shouldBe` [trade2]
-        makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
+        makers2 `shouldBe` [decAmountOf (amountOf trade2) maker2 ]
 
         let
           (makers3, trades3) =
@@ -324,7 +324,7 @@ main = hspec $ do
             Order.trade [maker1, maker3] taker3
 
         trades4 `shouldBe` trades 
-        makers4 `shouldBe` [setAmountOf maker3 1]
+        makers4 `shouldBe` [setAmountOf 1 maker3]
 
   describe "Exchange" $ do
     
