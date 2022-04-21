@@ -48,8 +48,8 @@ instance GetEntry Order asset where
   priceOf  = orderPriceOf
 
 instance SetEntry Order asset where
-  setAmountOf amount order = order { orderAmountOf = amount }
-  setTimeOf time order     = order { orderTimeOf = time }
+  setAmountOf order amount = order { orderAmountOf = amount }
+  setTimeOf   order time   = order { orderTimeOf = time }
 
 isBid :: GetEntry a asset => a asset -> Bool
 isBid order =
@@ -95,8 +95,8 @@ instance GetEntry Maker asset where
   priceOf  (Maker order) = priceOf order
 
 instance SetEntry Maker asset where
-  setAmountOf amount (Maker order) = Maker order { orderAmountOf = amount }
-  setTimeOf time (Maker order)     = Maker order { orderTimeOf = time }
+  setAmountOf (Maker order) amount = Maker order { orderAmountOf = amount }
+  setTimeOf   (Maker order) time   = Maker order { orderTimeOf = time }
 
 instance Entry Maker asset
 
@@ -106,7 +106,7 @@ sumAmount orders =
     order  = NonEmpty.head orders
     amount = foldMap amountOf orders
   in
-    setAmountOf amount order 
+    setAmountOf order amount
 
 equalOn :: Eq b => (a -> b) -> a -> a -> Bool
 equalOn f = (==) `on` f
@@ -136,8 +136,8 @@ instance GetEntry Taker asset where
   priceOf  (Taker order) = priceOf order
 
 instance SetEntry Taker asset where
-  setAmountOf amount (Taker order) = Taker order { orderAmountOf = amount }
-  setTimeOf time (Taker order)     = Taker order { orderTimeOf = time }
+  setAmountOf (Taker order) amount = Taker order { orderAmountOf = amount }
+  setTimeOf (Taker order) time     = Taker order { orderTimeOf = time }
 
 instance Entry Taker asset where
 
@@ -168,14 +168,14 @@ trade makers taker =
     order = 
       getTakerOrder taker
     f maker state = 
-      engine_ maker state (match maker (decAmountOf (accAmount state) taker))
+      engine_ maker state (match maker (decAmountOf taker (accAmount state)))
     (makers', trades', amount') = 
       foldr f mempty (reverse makers)
   in
     reverse *** reverse $
       case orderStyleOf order of
         Limit | (not . null) trades' && amountOf taker > amount' ->
-          (toMaker (decAmountOf amount' taker):makers', trades')
+          (toMaker (decAmountOf taker amount'):makers', trades')
         Limit | amountOf taker > amount' ->
           (toMaker taker:makers', trades')
         otherwise ->
@@ -194,7 +194,7 @@ engine_ :: Maker asset -> EngineState asset -> Maybe (Trade asset) -> EngineStat
 engine_ maker (makers', trades', amount') mtrade =
   let
     decAmountBy maker' trade' = 
-      decAmountOf (amountOf trade')maker' 
+      decAmountOf maker' (amountOf trade')
     accAmountOf trade' =
       amount' + amountOf trade'
     isMakerAfter trade' =
