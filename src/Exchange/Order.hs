@@ -61,6 +61,7 @@ isAsk order =
     Ask -> True
     _   -> False
 
+-- Maker
 newtype Maker asset = 
   Maker (Order asset)
     deriving (Show, Eq)
@@ -78,6 +79,29 @@ instance SetEntry Maker asset where
 
 instance Entry Maker asset
 
+sumAmount :: List.NonEmpty (Maker asset) -> Maker asset
+sumAmount orders = 
+  let
+    order  = NonEmpty.head orders
+    amount = foldMap amountOf orders
+  in
+    setAmountOf order amount
+
+equalOn :: Eq b => (a -> b) -> a -> a -> Bool
+equalOn f = (==) `on` f
+
+groupBy :: Eq b => (Maker asset -> b) -> [Maker asset] -> [List.NonEmpty (Maker asset)]
+groupBy f orders = 
+  NonEmpty.fromList <$> List.groupBy (equalOn f) orders
+
+print :: Typeable asset => Maker asset -> IO ()
+print order = do
+  putStr $ show (sideOf order)
+  putStr $ " (" ++ show (priceOf order) ++ ")"
+  putStr $ " (" ++ show (amountOf order) ++ ")"
+  putStrLn ""
+
+-- Taker
 newtype Taker asset = 
   Taker (Order asset)
 
@@ -93,6 +117,8 @@ instance SetEntry Taker asset where
   setTimeOf (Taker order) time     = Taker order { orderTimeOf = time }
 
 instance Entry Taker asset where
+
+-- Makers and Takers
 
 match :: Maker asset -> Taker asset -> Maybe (Trade asset)
 match maker taker = 
@@ -113,43 +139,27 @@ match maker taker =
 trade :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
 trade makers taker = 
   let
-    decAmountBy maker trade' = 
-      decAmountOf maker (amountOf trade')
-    remainingAmount maker trade' =
-      amountOf maker - amountOf trade'
-    go maker (makers', trades', amount') mtrade =
-      case mtrade of 
-        Just trade' | remainingAmount maker trade' > 0 -> 
-          (decAmountBy maker trade':makers', trade':trades', amountOf trade' + amount')
-        Just trade' ->
-          (makers', trade':trades', amount' + amountOf trade')
-        Nothing -> 
-          (maker:makers', trades', amount')
     f maker state@(_, _, amt') = 
-      go maker state (match maker (decAmountOf taker amt'))
+      engine_ maker state (match maker (decAmountOf taker amt'))
     (ms, ts, _) = 
       foldr f ([],[], (Amount 0)) (reverse makers)
   in
     (reverse ms, reverse ts)
     
-print :: Typeable asset => Maker asset -> IO ()
-print order = do
-  putStr $ show (sideOf order)
-  putStr $ " (" ++ show (priceOf order) ++ ")"
-  putStr $ " (" ++ show (amountOf order) ++ ")"
-  putStrLn ""
-
-sumAmount :: List.NonEmpty (Maker asset) -> Maker asset
-sumAmount orders = 
+-- _engine_ is the workhorse of the order matching engine.
+-- it is *nont* meant to be called from outside this module.
+engine_ maker (makers', trades', amount') mtrade =
   let
-    order  = NonEmpty.head orders
-    amount = foldMap amountOf orders
+    decAmountBy maker trade' = 
+      decAmountOf maker (amountOf trade')
+    remainingAmount maker trade' =
+      amountOf maker - amountOf trade'
   in
-    setAmountOf order amount
+    case mtrade of 
+      Just trade' | remainingAmount maker trade' > 0 -> 
+        (decAmountBy maker trade':makers', trade':trades', amountOf trade' + amount')
+      Just trade' ->
+        (makers', trade':trades', amount' + amountOf trade')
+      Nothing -> 
+        (maker:makers', trades', amount')
 
-groupBy :: Eq b => (Maker asset -> b) -> [Maker asset] -> [List.NonEmpty (Maker asset)]
-groupBy f orders = 
-  NonEmpty.fromList <$> List.groupBy (equalOn f) orders
-
-equalOn :: Eq b => (a -> b) -> a -> a -> Bool
-equalOn f = (==) `on` f
