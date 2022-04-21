@@ -187,9 +187,9 @@ tradeOrders makers taker =
     f maker state@(_, _, amt') = 
       go maker state (matchOrders maker (decAmountOf taker amt'))
     (ms, ts, _) = 
-      foldr f ([],[], (Amount 0)) makers
+      foldr f ([],[], (Amount 0)) (reverse makers)
   in
-    (reverse ms, ts)
+    (reverse ms, reverse ts)
     
 
 printOrder :: Typeable asset => Maker asset -> IO ()

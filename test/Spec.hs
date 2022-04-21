@@ -154,8 +154,8 @@ main = hspec $ do
           (makers4, trades4) =
             tradeOrders [maker1, maker3] taker3
 
-        -- trades4 `shouldBe` trades -- TODO: failing
-        makers4 `shouldBe` [setAmountOf maker3 1] -- TODO: failing
+        trades4 `shouldBe` trades 
+        makers4 `shouldBe` [setAmountOf maker3 1]
 
     context "when bid is higher than ask" $ do
 
