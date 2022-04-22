@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
@@ -28,12 +29,12 @@ data Order asset =
 instance (Show asset, Typeable asset) => Show (Order asset) where
   showsPrec i order = 
     let
-      go =
-        showString (head . words . show $ typeOf order) . showChar ' ' . 
-        showsPrec i (sideOf order) . showChar ' ' . 
-        showsPrec i (assetOf order) . showChar ' ' .
-        showsPrec 11 (timeOf order) . showChar ' ' .
-        showsPrec 11 (amountOf order) . showChar ' ' .
+      go = do
+        showString (head . words . show $ typeOf order) . showChar ' '
+        showsPrec i (sideOf order) . showChar ' ' 
+        showsPrec i (assetOf order) . showChar ' '
+        showsPrec 11 (timeOf order) . showChar ' '
+        showsPrec 11 (amountOf order) . showChar ' '
         showsPrec 11 (priceOf order) 
     in
       if i > 0
@@ -178,7 +179,7 @@ trade makers taker =
           (toMaker (decAmountOf taker amount'):makers', trades')
         Limit | amountOf taker > amount' ->
           (toMaker taker:makers', trades')
-        otherwise ->
+        _ ->
           (makers', trades')
     
 type EngineState asset = 

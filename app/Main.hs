@@ -4,7 +4,7 @@ import qualified Exchange.Asset as Asset
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad (forM_)
+import Control.Monad (forM_, forever)
 import Control.Exception (catch, SomeException)
 import System.IO (hFlush, stdout)
 import GHC.Read (readPrec)
@@ -48,13 +48,15 @@ book =
 main :: IO ()
 main = do
   runWith book $ do
-    forM_ [Time 1..] $ \time -> do
+    forever $ do
       book' <- orderbook
+      time <- clock
       order <- liftIO $ do
         Book.print book'
-        putStr "Enter trade: "
+        putStr $ show time
+        putStr " => Enter trade: "
         hFlush stdout
-        flip setTimeOf time . getOrder  <$> readLn `catch` parseErrorHandler
+        getOrder  <$> readLn `catch` parseErrorHandler
       trades <- place order 
       liftIO $ do
         putStrLn ""

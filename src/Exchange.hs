@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Exchange (
   module Exchange
 , module Exchange.Entry
@@ -32,7 +33,11 @@ instance Monoid (ExchangeState asset) where
 
 modifyBook :: (Book asset -> Book asset) -> ExchangeState asset -> ExchangeState asset
 modifyBook f state = 
-    state { exchangeBookOf = f (exchangeBookOf state) }
+  state { exchangeBookOf = f (exchangeBookOf state) }
+
+modifyTime :: (Time -> Time) -> ExchangeState asset -> ExchangeState asset
+modifyTime f state =
+  state { exchangeTimeOf = f (exchangeTimeOf state) }
 
 
 -- Exchange
@@ -54,16 +59,28 @@ empty =
 place :: Monad m => Order asset -> Exchange asset m [Trade asset]
 place order = do
   book <- State.gets exchangeBookOf
+  time <- State.gets exchangeTimeOf
+  let
+    order' =
+      setTimeOf order time
   if Order.isBid order
     then do
-      let (as, ts) = Order.trade (Book.asks book) (Order.Taker order)
-      State.modify $ modifyBook (\book -> book { Book.asks = as })
+      let (as, ts) = Order.trade (Book.asks book) (Order.Taker order')
+      State.modify $ do
+        modifyBook (\b -> b { Book.asks = as })
+        modifyTime (+1) 
       return ts
     else do
-      let (bs, ts) = Order.trade (Book.bids book) (Order.Taker order)
-      State.modify $ modifyBook (\book -> book { Book.bids = bs })
+      let (bs, ts) = Order.trade (Book.bids book) (Order.Taker order')
+      State.modify $
+        modifyBook (\b -> b { Book.bids = bs }) .
+        modifyTime (+1)
       return ts
 
 orderbook :: Monad m => Exchange asset m (Book asset)
 orderbook =
   State.gets exchangeBookOf
+
+clock :: Monad m => Exchange asset m Time
+clock = 
+  State.gets exchangeTimeOf
