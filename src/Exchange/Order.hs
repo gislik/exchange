@@ -49,7 +49,7 @@ instance GetEntry Order asset where
 
 instance SetEntry Order asset where
   setAmountOf order amount = order { orderAmountOf = amount }
-  setTimeOf   order time   = order { orderTimeOf = time }
+  setTimeOf order time     = order { orderTimeOf = time }
 
 isBid :: GetEntry a asset => a asset -> Bool
 isBid order =
@@ -96,7 +96,7 @@ instance GetEntry Maker asset where
 
 instance SetEntry Maker asset where
   setAmountOf (Maker order) amount = Maker order { orderAmountOf = amount }
-  setTimeOf   (Maker order) time   = Maker order { orderTimeOf = time }
+  setTimeOf (Maker order) time     = Maker order { orderTimeOf = time }
 
 instance Entry Maker asset
 

@@ -25,7 +25,7 @@ instance Read asset => Read (ReadOrder asset) where
         Order.limit <$> 
           readPrec <*> 
           readPrec <*> 
-          pure (Time 0) <*> 
+          pure mempty <*> 
           (Amount <$> readPrec) <*> 
           (Price <$> readPrec)
     in
@@ -68,4 +68,4 @@ main = do
 parseErrorHandler :: SomeException -> IO (ReadOrder Asset.BTC)
 parseErrorHandler _ =  do
   putStrLn "no order"
-  return $ ReadOrder (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 0))
+  return $ ReadOrder (Order.limit Bid Asset.BTC mempty mempty mempty)

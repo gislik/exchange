@@ -24,11 +24,24 @@ newtype Price =
   Price Double 
     deriving (Show, Eq, Ord, Num, Read)
 
+instance Semigroup Price where
+  Price price1 <> Price price2 =
+    Price (price1 + price2)
+
+instance Monoid Price where
+  mempty = Price 0
+
 -- Time
 newtype Time = 
   Time Int
     deriving (Show, Eq, Num, Enum)
 
+instance Semigroup Time where
+  Time time1 <> Time time2 =
+    Time (time1 + time2)
+
+instance Monoid Time where
+  mempty = Time 0
 -- Style
 data Style =
     Limit
