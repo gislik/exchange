@@ -177,8 +177,8 @@ match maker taker =
     else 
       Nothing
 
-trade :: [Maker asset] -> Taker asset -> ([Maker asset], [Trade asset])
-trade makers taker = 
+trade :: Taker asset -> [Maker asset] -> ([Maker asset], [Trade asset])
+trade taker makers = 
   let
     order = 
       getTakerOrder taker

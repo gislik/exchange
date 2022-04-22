@@ -10,7 +10,6 @@ import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
 import Control.Monad.Trans.State.Strict (StateT)
 import Exchange.Trade (Trade)
-import Exchange.Order (Order)
 import Exchange.Book (Book)
 import Exchange.Entry
 import Exchange.Type
@@ -64,28 +63,17 @@ empty :: Monad m => Exchange asset m ()
 empty = 
   return ()
 
-place :: Monad m => Order asset -> Exchange asset m ()
-place order = do
+trade :: Monad m => Order.Taker asset -> Exchange asset m ()
+trade order = do
   book <- State.gets stateBookOf
   time <- State.gets stateTimeOf
   let
-    order' =
-      setTimeOf order time
-  if Order.isBid order
-    then do
-      let (ms, ts) = Order.trade (Book.asks book) (Order.Taker order')
-      let (bs, as) = Order.splitSides ms
-      State.modify $ 
-        modifyBook (\b -> b { Book.bids = bs ++ (Book.bids b), Book.asks = as }) .
-        modifyTrades (\ts' -> ts' ++ ts) .
-        modifyTime (+1) 
-    else do
-      let (ms, ts) = Order.trade (Book.bids book) (Order.Taker order')
-      let (bs, as) = Order.splitSides ms
-      State.modify $
-        modifyBook (\b -> b { Book.bids = bs, Book.asks = as ++ (Book.asks b) }) .
-        modifyTrades (\ts' -> ts' ++ ts) .
-        modifyTime (+1)
+    (book', trades') = 
+      Book.trade (setTimeOf order time) book
+  State.modify $ 
+    modifyBook (const book') .
+    modifyTrades (\ts' -> ts' ++ trades') .
+    modifyTime (+1) 
 
 trades :: Monad m => Exchange asset m [Trade asset]
 trades = do

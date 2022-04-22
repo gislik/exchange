@@ -5,11 +5,11 @@ import qualified Control.Concurrent as Thread
 import qualified Exchange.Asset as Asset
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
+import Data.Functor (void)
 import Control.Exception (throwTo)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (forM_, forever)
 import Control.Exception (catch, SomeException)
-import System.Posix.Signals (Signal)
 import System.Exit (ExitCode(ExitSuccess))
 import System.IO (hFlush, stdout)
 import GHC.Read (readPrec)
@@ -30,7 +30,7 @@ main = do
         putStr " => Enter trade: "
         hFlush stdout
         getOrder  <$> readLn `catch` parseErrorHandler
-      place order 
+      trade (Order.Taker order)
       trades' <- trades
       liftIO $ do
         putStrLn ""
@@ -80,11 +80,10 @@ book =
 
 --- signals
 
-handleKeyboardSignal :: IO Signal.Handler
+handleKeyboardSignal :: IO ()
 handleKeyboardSignal = do
   tid <- Thread.myThreadId
-  Signal.installHandler
+  void $ Signal.installHandler
     Signal.keyboardSignal
-    -- (Signal.Catch $ throwTo tid ExitSuccess)
     (Signal.Catch $ Thread.killThread tid >> throwTo tid ExitSuccess)
     Nothing

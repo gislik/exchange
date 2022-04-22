@@ -128,14 +128,14 @@ main = hspec $ do
 
         let
           (makers1, trades1) = 
-            Order.trade [maker1] taker1
+            Order.trade taker1 [maker1]
 
         trades1 `shouldBe` []
         makers1 `shouldBe` [maker1, Order.toMaker taker1]
 
         let
           (makers2, trades2) = 
-            Order.trade [maker2] taker2
+            Order.trade taker2 [maker2] 
 
         trades2 `shouldBe` []
         makers2 `shouldBe` [maker2, Order.toMaker taker2]
@@ -187,35 +187,35 @@ main = hspec $ do
 
         let
           (makers1, trades1) =
-            Order.trade [maker1] taker1
+            Order.trade taker1 [maker1] 
 
         trades1 `shouldBe` [trade1]
         makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
 
         let
           (makers2, trades2) =
-            Order.trade [maker2] taker2
+            Order.trade taker2 [maker2] 
 
         trades2 `shouldBe` [trade2]
         makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
 
         let
           (makers3, trades3) =
-            Order.trade [maker3] taker3
+            Order.trade taker3 [maker3] 
 
         trades3 `shouldBe` [trade3]
         makers3 `shouldBe` [Order.toMaker $ decAmountOf taker3 (amountOf trade3)]
 
         let
           (makers4, trades4) =
-            Order.trade maker4 taker4
+            Order.trade taker4 maker4 
 
         trades4 `shouldBe` trades 
         makers4 `shouldBe` [setAmountOf maker3 1]
 
         let
           (makers5, trades5) =
-            Order.trade [maker5] taker5
+            Order.trade taker5 [maker5] 
 
         trades5 `shouldBe` [trade5]
         makers5 `shouldBe` [Order.toMaker $ decAmountOf taker5 (amountOf trade5)]
@@ -254,28 +254,28 @@ main = hspec $ do
         
         let
           (makers1, trades1) =
-            Order.trade [maker1] taker1
+            Order.trade taker1 [maker1] 
 
         trades1 `shouldBe` [trade1]
         makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
 
         let
           (makers2, trades2) =
-            Order.trade [maker2] taker2
+            Order.trade taker2 [maker2] 
 
         trades2 `shouldBe` [trade2]
         makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
 
         -- let
           -- (makers3, trades3) =
-            -- Order.trade [maker3] taker3
+            -- Order.trade taker3 [maker3] 
 
         -- trades3 `shouldBe` [trade3]
         -- makers3 `shouldBe` []
 
         let
           (makers4, trades4) =
-            Order.trade [maker2, maker3] taker3
+            Order.trade taker3 [maker2, maker3] 
 
         trades4 `shouldBe` trades
         makers4 `shouldBe` []
@@ -299,14 +299,14 @@ main = hspec $ do
 
         let
           (makers1, trades1) = 
-            Order.trade [maker1] taker1
+            Order.trade taker1 [maker1] 
 
         trades1 `shouldBe` []
         makers1 `shouldBe` [maker1]
 
         let
           (makers2, trades2) = 
-            Order.trade [maker2] taker2
+            Order.trade taker2 [maker2] 
 
         trades2 `shouldBe` []
         makers2 `shouldBe` [maker2]
@@ -342,31 +342,63 @@ main = hspec $ do
 
         let
           (makers1, trades1) =
-            Order.trade [maker1] taker1
+            Order.trade taker1 [maker1] 
 
         trades1 `shouldBe` [trade1]
         makers1 `shouldBe` [decAmountOf maker1 (amountOf trade1)]
 
         let
           (makers2, trades2) =
-            Order.trade [maker2] taker2
+            Order.trade taker2 [maker2] 
 
         trades2 `shouldBe` [trade2]
         makers2 `shouldBe` [decAmountOf maker2 (amountOf trade2)]
 
         let
           (makers3, trades3) =
-            Order.trade [maker3] taker3
+            Order.trade taker3 [maker3] 
 
         trades3 `shouldBe` [trade3]
         makers3 `shouldBe` []
 
         let
           (makers4, trades4) =
-            Order.trade [maker1, maker3] taker3
+            Order.trade taker3 [maker1, maker3]
 
         trades4 `shouldBe` trades 
         makers4 `shouldBe` [setAmountOf maker3 1]
+
+  describe "Book" $ do
+
+    context "when an order is placed" $ do
+      
+      let
+        book = 
+          foldr Book.newOrder Book.empty 
+            [
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+            ]
+        bid =
+          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
+        ask =
+          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15))
+
+      it "should end up on the correct side" $ do
+
+        let
+          (book', trades) =
+            Book.trade bid book
+          bids = 
+            Book.bids book'
+          asks = 
+            Book.asks book'
+
+        bids `shouldBe` 
+          [
+            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+          ]
 
   describe "Exchange" $ do
     
@@ -421,24 +453,24 @@ main = hspec $ do
       it "should have a book with a single entry left" $ do
         
         book' <- runWith book $ do
-          place (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30))
+          trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
           orderbook
         length book' `shouldBe` 1
         
         book' <- runWith book $ do
-          place (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5))
+          trade (Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5)))
           orderbook
         length book' `shouldBe` 1
 
       it "should have a trade in the exchange state" $ do
 
         trades' <- runWith book $ do
-          place (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30))
+          trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
           trades
         length trades' `shouldBe` 1
         
         trades' <- runWith book $ do
-          place (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30))
+          trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
           trades
           trades
         length trades' `shouldBe` 0
@@ -457,18 +489,18 @@ main = hspec $ do
 
         let 
           bid =
-            Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15)
+            Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
 
         book' <- runWith book $ do
-          place bid
+          trade bid
           orderbook
-        book' `shouldBe` foldr Book.newOrder book [Order.Maker bid]
+        book' `shouldBe` foldr Book.newOrder book [Order.toMaker bid]
 
         let 
           ask =
-            Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15)
+            Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15))
 
         book' <- runWith book $ do
-          place ask
+          trade ask
           orderbook
-        book' `shouldBe` foldr Book.newOrder book [Order.Maker ask]
+        book' `shouldBe` foldr Book.newOrder book [Order.toMaker ask]
