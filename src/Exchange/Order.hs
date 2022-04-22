@@ -76,13 +76,13 @@ limit side asset time amount price =
   , orderStyleOf  = Limit
   }
 
-fillAndKill :: Side -> asset -> Time -> Amount -> Price -> Order asset
-fillAndKill side asset time amount price =
+allOrNothing :: Side -> asset -> Time -> Amount -> Price -> Order asset
+allOrNothing side asset time amount price =
   let 
     order = 
       limit side asset time amount price 
     in
-      order { orderStyleOf = FillAndKill }
+      order { orderStyleOf = AllOrNothing }
 
 -- Maker
 newtype Maker asset = 

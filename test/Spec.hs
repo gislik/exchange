@@ -281,19 +281,19 @@ main = hspec $ do
         makers4 `shouldBe` []
 
 
-  describe "Order {FillAndKill}" $ do
+  describe "Order {AllOrNothing}" $ do
 
-    context "when bid is lower than ask {FillAndKill}" $ do
+    context "when bid is lower than ask {AllOrNothing}" $ do
         
       let 
         maker1 = 
-          Order.Maker (Order.fillAndKill Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
         taker1 = 
-          Order.Taker (Order.fillAndKill Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
         maker2 =
-          Order.Maker (Order.fillAndKill Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Maker (Order.allOrNothing Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
         taker2 =
-          Order.Taker (Order.fillAndKill Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Taker (Order.allOrNothing Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
 
       it "should result in no trades and unchanged makers" $ do
 
@@ -311,25 +311,25 @@ main = hspec $ do
         trades2 `shouldBe` []
         makers2 `shouldBe` [maker2]
 
-    context "when bid is equal to ask {FillAndKill}" $ do
+    context "when bid is equal to ask {AllOrNothing}" $ do
 
       let
         maker1 =
-          Order.Maker (Order.fillAndKill Bid Asset.BTC (Time 1) (Amount 2) (Price 15))
+          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 1) (Amount 2) (Price 15))
         taker1 =
-          Order.Taker (Order.fillAndKill Ask Asset.BTC (Time 2) (Amount 1) (Price 15))
+          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 2) (Amount 1) (Price 15))
         trade1 = 
           Trade Asset.BTC (Time 2) (Amount 1) (Price 15)
         maker2 =
-          Order.Maker (Order.fillAndKill Ask Asset.BTC (Time 3) (Amount 2) (Price 15))
+          Order.Maker (Order.allOrNothing Ask Asset.BTC (Time 3) (Amount 2) (Price 15))
         taker2 =
-          Order.Taker (Order.fillAndKill Bid Asset.BTC (Time 4) (Amount 1) (Price 15))
+          Order.Taker (Order.allOrNothing Bid Asset.BTC (Time 4) (Amount 1) (Price 15))
         trade2 = 
           Trade Asset.BTC (Time 4) (Amount 1) (Price 15)
         maker3 =
-          Order.Maker (Order.fillAndKill Bid Asset.BTC (Time 5) (Amount 4) (Price 15))
+          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 5) (Amount 4) (Price 15))
         taker3 =
-          Order.Taker (Order.fillAndKill Ask Asset.BTC (Time 6) (Amount 5) (Price 15))
+          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 6) (Amount 5) (Price 15))
         trade3 =
             Trade Asset.BTC (Time 6) (Amount 4) (Price 15)
         trades = 

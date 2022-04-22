@@ -45,7 +45,7 @@ instance Monoid Time where
 -- Style
 data Style =
     Limit
-  | FillAndKill
+  | AllOrNothing
     deriving (Eq)
 
 data Side =
