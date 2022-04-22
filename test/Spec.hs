@@ -29,6 +29,16 @@ main = hspec $ do
         (Amount x) == (Amount x) `shouldBe` True
         (Amount x) == (Amount 2) `shouldBe` False
 
+  describe "Trade" $ do
+    
+    let
+      trade = 
+        Trade Asset.BTC (Time 1) (Amount 2) (Price 3)
+
+    it "should have a nice representation" $ do
+
+      show trade `shouldBe` "Trade BTC (Time 1) (Amount 2.0) (Price 3.0)"
+
   describe "Order {Limit}" $ do
 
     let
@@ -64,6 +74,12 @@ main = hspec $ do
       timeOf ethbid `shouldBe` (Time 2)
       timeOf btcask `shouldBe` (Time 3)
       timeOf ethask `shouldBe` (Time 4)
+
+
+    it "should have a nice representation" $ do
+
+      show btcbid `shouldBe` "Order Bid BTC (Time 1) (Amount 0.0) (Price 0.0)"
+
 
     context "when bid is lower than ask {Limit}" $ do
 
@@ -364,3 +380,26 @@ main = hspec $ do
 
         book' <- runWith book orderbook
         length book' `shouldBe` 2
+
+
+    context "when a trade happens" $ do
+
+      let
+        book = 
+          foldr Book.newOrder Book.empty 
+            [
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+            ]
+
+      it "should have a book with a single entry left" $ do
+        
+        book' <- runWith book $ do
+          place (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30))
+          orderbook
+        length book' `shouldBe` 1
+        
+        book' <- runWith book $ do
+          place (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5))
+          orderbook
+        length book' `shouldBe` 1

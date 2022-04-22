@@ -29,12 +29,12 @@ data Order asset =
 instance (Show asset, Typeable asset) => Show (Order asset) where
   showsPrec i order = 
     let
-      go = do
-        showString (head . words . show $ typeOf order) . showChar ' '
-        showsPrec i (sideOf order) . showChar ' ' 
-        showsPrec i (assetOf order) . showChar ' '
-        showsPrec 11 (timeOf order) . showChar ' '
-        showsPrec 11 (amountOf order) . showChar ' '
+      go = 
+        showString (head . words . show $ typeOf order) . showChar ' ' .
+        showsPrec i (sideOf order) . showChar ' ' .
+        showsPrec i (assetOf order) . showChar ' ' .
+        showsPrec 11 (timeOf order) . showChar ' ' .
+        showsPrec 11 (amountOf order) . showChar ' ' .
         showsPrec 11 (priceOf order) 
     in
       if i > 0

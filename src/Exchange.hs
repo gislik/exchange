@@ -20,25 +20,33 @@ import Exchange.Type
 data ExchangeState asset =
   ExchangeState
   {
-    exchangeBookOf :: Book asset
-  , exchangeTimeOf :: Time
+    stateBookOf :: Book asset
+  , stateTimeOf :: Time
+  , stateTrades :: [Trade asset]
   }
 
 instance Semigroup (ExchangeState asset) where
-  ExchangeState book1 time1 <> ExchangeState book2 time2 =
-    ExchangeState (book1 <> book2) (time1 <> time2)
+  ExchangeState book1 time1 trades1 <> ExchangeState book2 time2 trades2 =
+    ExchangeState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2)
 
 instance Monoid (ExchangeState asset) where
-  mempty = ExchangeState Book.empty 0
+  mempty = ExchangeState Book.empty 0 []
 
 modifyBook :: (Book asset -> Book asset) -> ExchangeState asset -> ExchangeState asset
 modifyBook f state = 
-  state { exchangeBookOf = f (exchangeBookOf state) }
+  state { stateBookOf = f (stateBookOf state) }
 
 modifyTime :: (Time -> Time) -> ExchangeState asset -> ExchangeState asset
 modifyTime f state =
-  state { exchangeTimeOf = f (exchangeTimeOf state) }
+  state { stateTimeOf = f (stateTimeOf state) }
 
+modifyTrades :: ([Trade asset] -> [Trade asset]) -> ExchangeState asset -> ExchangeState asset
+modifyTrades f state =
+  state { stateTrades = f (stateTrades state) }
+
+clearTrades :: ExchangeState asset -> ExchangeState asset
+clearTrades state = 
+  state { stateTrades = [] }
 
 -- Exchange
 type Exchange asset m = 
@@ -46,7 +54,7 @@ type Exchange asset m =
 
 runWith :: Monad m => Book asset -> Exchange asset m a -> m a
 runWith book ex = 
-  State.evalStateT ex (mempty { exchangeBookOf = book })
+  State.evalStateT ex (mempty { stateBookOf = book })
 
 run :: Monad m => Exchange asset m a -> m a
 run = 
@@ -56,31 +64,40 @@ empty :: Monad m => Exchange asset m ()
 empty = 
   return ()
 
-place :: Monad m => Order asset -> Exchange asset m [Trade asset]
+place :: Monad m => Order asset -> Exchange asset m ()
 place order = do
-  book <- State.gets exchangeBookOf
-  time <- State.gets exchangeTimeOf
+  book <- State.gets stateBookOf
+  time <- State.gets stateTimeOf
   let
     order' =
       setTimeOf order time
   if Order.isBid order
     then do
       let (as, ts) = Order.trade (Book.asks book) (Order.Taker order')
-      State.modify $ do
-        modifyBook (\b -> b { Book.asks = as })
+      State.modify $ 
+        modifyBook (\b -> b { Book.asks = as }) .
+        modifyTrades (\ts' -> ts' ++ ts) .
         modifyTime (+1) 
-      return ts
     else do
       let (bs, ts) = Order.trade (Book.bids book) (Order.Taker order')
       State.modify $
         modifyBook (\b -> b { Book.bids = bs }) .
+        modifyTrades (\ts' -> ts' ++ ts) .
         modifyTime (+1)
-      return ts
+
+trades :: Monad m => Exchange asset m [Trade asset]
+trades = do
+  state <- State.get
+  let 
+    trades' = 
+      stateTrades state
+  State.put $ clearTrades state
+  return trades'
 
 orderbook :: Monad m => Exchange asset m (Book asset)
 orderbook =
-  State.gets exchangeBookOf
+  State.gets stateBookOf
 
 clock :: Monad m => Exchange asset m Time
 clock = 
-  State.gets exchangeTimeOf
+  State.gets stateTimeOf
