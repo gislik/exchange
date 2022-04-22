@@ -30,13 +30,12 @@ main = do
         putStr " => Enter trade: "
         hFlush stdout
         getOrder  <$> readLn `catch` parseErrorHandler
-      trade (Order.Taker order)
-      trades' <- trades
+      trades <- trade (Order.Taker order)
       liftIO $ do
         putStrLn ""
         putStrLn "Trades"
         putStrLn "------"
-        forM_ trades' print 
+        forM_ trades print 
         putStrLn "------"
         putStrLn ""
       return ()
