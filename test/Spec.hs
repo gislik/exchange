@@ -403,3 +403,17 @@ main = hspec $ do
           place (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5))
           orderbook
         length book' `shouldBe` 1
+
+      it "should have a trade in the exchange state" $ do
+
+        trades' <- runWith book $ do
+          place (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30))
+          trades
+        length trades' `shouldBe` 1
+        
+        trades' <- runWith book $ do
+          place (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30))
+          trades
+          trades
+        length trades' `shouldBe` 0
+        
