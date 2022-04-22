@@ -12,6 +12,13 @@ data Book asset = Book {
   , asks :: [Order.Maker asset]
 } deriving (Show, Typeable)
 
+instance Semigroup (Book asset) where
+  Book bids1 asks1 <> Book bids2 asks2 =
+    Book (bids1 <> bids2) (asks1 <> asks2)
+
+instance Monoid (Book asset) where
+  mempty = Book [] []
+
 instance Foldable Book where
   foldr f x0 book = 
     foldr f x0 (assetOf <$> bids book ++ asks book)
