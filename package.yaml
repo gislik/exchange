@@ -37,6 +37,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - exchange
+    - unix
 
 tests:
   exchange-test:

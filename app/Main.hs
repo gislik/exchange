@@ -1,11 +1,16 @@
 module Main where
 
+import qualified System.Posix.Signals as Signal
+import qualified Control.Concurrent as Thread
 import qualified Exchange.Asset as Asset
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
+import Control.Exception (throwTo)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad (forM_, forever)
 import Control.Exception (catch, SomeException)
+import System.Posix.Signals (Signal)
+import System.Exit (ExitCode(ExitSuccess))
 import System.IO (hFlush, stdout)
 import GHC.Read (readPrec)
 import Exchange
@@ -14,6 +19,7 @@ import Exchange.Book (Book)
 
 main :: IO ()
 main = do
+  handleKeyboardSignal
   runWith book $ do
     forever $ do
       book' <- orderbook
@@ -71,3 +77,14 @@ book =
     , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (Amount 30) (Price 97))
     ]
 
+
+--- signals
+
+handleKeyboardSignal :: IO Signal.Handler
+handleKeyboardSignal = do
+  tid <- Thread.myThreadId
+  Signal.installHandler
+    Signal.keyboardSignal
+    -- (Signal.Catch $ throwTo tid ExitSuccess)
+    (Signal.Catch $ Thread.killThread tid >> throwTo tid ExitSuccess)
+    Nothing
