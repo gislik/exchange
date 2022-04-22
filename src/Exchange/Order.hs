@@ -9,6 +9,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import qualified Data.List.NonEmpty as List (NonEmpty)
 import Data.Typeable (Typeable, typeOf)
 import Data.Function (on)
+import Data.Foldable (foldl')
 import Control.Arrow ((***))
 import Exchange.Trade (Trade(Trade))
 import Exchange.Entry 
@@ -144,6 +145,15 @@ instance Entry Taker asset where
 
 -- Makers and Takers
 
+type EngineState asset = 
+  ([Maker asset], [Trade asset], Amount)
+
+accAmount :: EngineState asset -> Amount
+accAmount state = 
+  case state of
+    (_, _, amount) -> amount
+    
+
 toMaker :: Taker asset -> Maker asset
 toMaker taker = Maker (getTakerOrder taker)
 
@@ -168,12 +178,12 @@ trade makers taker =
   let
     order = 
       getTakerOrder taker
-    f maker state = 
-      engine_ maker state (match maker (decAmountOf taker (accAmount state)))
+    f state maker = 
+      engine_ (match maker (decAmountOf taker (accAmount state))) maker state 
     (makers', trades', amount') = 
-      foldr f mempty (reverse makers)
+      foldl' f mempty makers
   in
-    reverse *** reverse $
+   reverse *** reverse $
       case orderStyleOf order of
         Limit | (not . null) trades' && amountOf taker > amount' ->
           (toMaker (decAmountOf taker amount'):makers', trades')
@@ -182,17 +192,8 @@ trade makers taker =
         _ ->
           (makers', trades')
     
-type EngineState asset = 
-  ([Maker asset], [Trade asset], Amount)
-
-accAmount :: EngineState asset -> Amount
-accAmount state = 
-  case state of
-    (_, _, amount) -> amount
-    
-
-engine_ :: Maker asset -> EngineState asset -> Maybe (Trade asset) -> EngineState asset
-engine_ maker (makers', trades', amount') mtrade =
+engine_ :: Maybe (Trade asset) -> Maker asset -> EngineState asset -> EngineState asset
+engine_ mtrade maker (makers', trades', amount') =
   let
     decAmountBy maker' trade' = 
       decAmountOf maker' (amountOf trade')
