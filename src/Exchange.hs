@@ -73,15 +73,17 @@ place order = do
       setTimeOf order time
   if Order.isBid order
     then do
-      let (as, ts) = Order.trade (Book.asks book) (Order.Taker order')
+      let (ms, ts) = Order.trade (Book.asks book) (Order.Taker order')
+      let (bs, as) = Order.splitSides ms
       State.modify $ 
-        modifyBook (\b -> b { Book.asks = as }) .
+        modifyBook (\b -> b { Book.bids = bs ++ (Book.bids b), Book.asks = as }) .
         modifyTrades (\ts' -> ts' ++ ts) .
         modifyTime (+1) 
     else do
-      let (bs, ts) = Order.trade (Book.bids book) (Order.Taker order')
+      let (ms, ts) = Order.trade (Book.bids book) (Order.Taker order')
+      let (bs, as) = Order.splitSides ms
       State.modify $
-        modifyBook (\b -> b { Book.bids = bs }) .
+        modifyBook (\b -> b { Book.bids = bs, Book.asks = as ++ (Book.asks b) }) .
         modifyTrades (\ts' -> ts' ++ ts) .
         modifyTime (+1)
 

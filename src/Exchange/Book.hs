@@ -10,7 +10,7 @@ import Exchange.Entry
 data Book asset = Book {
     bids :: [Order.Maker asset]
   , asks :: [Order.Maker asset]
-} deriving (Show, Typeable)
+} deriving (Show, Typeable, Eq)
 
 instance Semigroup (Book asset) where
   Book bids1 asks1 <> Book bids2 asks2 =

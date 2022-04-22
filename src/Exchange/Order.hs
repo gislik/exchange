@@ -124,6 +124,10 @@ print order = do
   putStr $ " (" ++ show (amountOf order) ++ ")"
   putStrLn ""
 
+splitSides :: [Maker asset] -> ([Maker asset], [Maker asset])
+splitSides makers = 
+  List.partition isBid makers
+
 -- Taker
 newtype Taker asset = 
   Taker {

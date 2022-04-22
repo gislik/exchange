@@ -39,6 +39,32 @@ main = hspec $ do
 
       show trade `shouldBe` "Trade BTC (Time 1) (Amount 2.0) (Price 3.0)"
 
+  describe "Order" $ do
+
+    let 
+      makers =
+        [
+          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
+        , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
+        , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
+        , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+        ]
+        
+    it "should have split makers, i.e. bids and asks, to the correct sides" $ do
+
+      Order.splitSides makers `shouldBe` 
+        (
+          [
+            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+          ]
+        ,
+          [
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
+          , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
+          ]
+        )
+
   describe "Order {Limit}" $ do
 
     let
@@ -416,4 +442,33 @@ main = hspec $ do
           trades
           trades
         length trades' `shouldBe` 0
-        
+
+    context "when a limit order isn't fully matched" $ do
+
+      let
+        book = 
+          foldr Book.newOrder Book.empty 
+            [
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+            ]
+
+      it "should place the rest of the order on the correct side" $ do
+
+        let 
+          bid =
+            Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15)
+
+        book' <- runWith book $ do
+          place bid
+          orderbook
+        book' `shouldBe` foldr Book.newOrder book [Order.Maker bid]
+
+        let 
+          ask =
+            Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15)
+
+        book' <- runWith book $ do
+          place ask
+          orderbook
+        book' `shouldBe` foldr Book.newOrder book [Order.Maker ask]
