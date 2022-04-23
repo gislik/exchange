@@ -5,7 +5,9 @@ import qualified Exchange
 import Test.QuickCheck 
 import Test.Hspec
 import Exchange.Trade (Trade(Trade))
-import Exchange
+import Exchange.Type
+import Exchange.Entry
+
 
 main :: IO ()
 main = hspec $ do
@@ -422,7 +424,7 @@ main = hspec $ do
 
       it "should have an empty book" $ do
 
-        book' <- run orderbook
+        book' <- Exchange.run Exchange.orderbook
         length book' `shouldBe` 0
         
     context "when a single order has been placed" $ do
@@ -436,7 +438,7 @@ main = hspec $ do
 
       it "should have a book with one entry" $ do
 
-        book' <- runWith book orderbook
+        book' <- Exchange.runWith book Exchange.orderbook
         length book' `shouldBe` 1
 
 
@@ -452,7 +454,7 @@ main = hspec $ do
 
       it "should have a book with two entries" $ do
 
-        book' <- runWith book orderbook
+        book' <- Exchange.runWith book Exchange.orderbook
         length book' `shouldBe` 2
 
 
@@ -468,20 +470,20 @@ main = hspec $ do
 
       it "should have a book with a single entry left" $ do
         
-        book' <- runWith book $ do
-          trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
-          orderbook
+        book' <- Exchange.runWith book $ do
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
+          Exchange.orderbook
         length book' `shouldBe` 1
         
-        book' <- runWith book $ do
-          trade (Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5)))
-          orderbook
+        book' <- Exchange.runWith book $ do
+          Exchange.trade (Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5)))
+          Exchange.orderbook
         length book' `shouldBe` 1
 
       it "should have a trade in the exchange state" $ do
 
-        trades <- runWith book $ do
-          trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
+        trades <- Exchange.runWith book $ do
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
         length trades `shouldBe` 1
         
     context "when a limit order isn't fully matched" $ do
@@ -500,18 +502,18 @@ main = hspec $ do
           bid =
             Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
 
-        book' <- runWith book $ do
-          trade bid
-          orderbook
+        book' <- Exchange.runWith book $ do
+          Exchange.trade bid
+          Exchange.orderbook
         book' `shouldBe` foldr Book.newOrder book [Order.toMaker bid]
 
         let 
           ask =
             Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15))
 
-        book' <- runWith book $ do
-          trade ask
-          orderbook
+        book' <- Exchange.runWith book $ do
+          Exchange.trade ask
+          Exchange.orderbook
         book' `shouldBe` foldr Book.newOrder book [Order.toMaker ask]
 
     context "when an order is canceled" $ do
@@ -529,7 +531,7 @@ main = hspec $ do
           maker =
             Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
 
-        book' <- runWith book $ do
+        book' <- Exchange.runWith book $ do
           Exchange.cancel maker
           Exchange.orderbook
 

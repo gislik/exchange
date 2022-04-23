@@ -14,17 +14,18 @@ import Control.Monad (forM_, forever)
 import Control.Exception (catch, SomeException)
 import System.Exit (ExitCode(ExitSuccess), exitSuccess)
 import System.IO (hFlush, stdout)
-import Exchange
 import Exchange.Book (Book)
+import Exchange (Exchange)
+import Exchange.Type 
 import Command
 
 main :: IO ()
 main = do
   handleKeyboardSignal
-  runWith book $ do
+  Exchange.runWith book $ do
     forever $ do
-      book' <- orderbook
-      time <- clock
+      book' <- Exchange.orderbook
+      time <- Exchange.clock
       command <- liftIO $ do
         Book.print book'
         putStr $ show time
@@ -38,7 +39,7 @@ handleCommand :: (Show asset, Typeable asset, Eq asset) => Command asset -> Exch
 handleCommand command =
   case command of
     Order taker -> do
-      trades <- trade taker
+      trades <- Exchange.trade taker
       liftIO $ do
         putStrLn ""
         putStrLn "Trades"
@@ -47,7 +48,7 @@ handleCommand command =
         putStrLn "------"
         putStrLn ""
     Cancel maker ->
-      cancel maker
+      Exchange.cancel maker
     Unknown ->
       liftIO $ do
         putStrLn "unknown command"
