@@ -147,6 +147,17 @@ instance SetEntry Taker asset where
 
 instance Entry Taker asset where
 
+instance (Show asset, Typeable asset) => Show (Taker asset) where
+  showsPrec i taker@(Taker order) = 
+    let
+      go = 
+        showString (head . words . show $ typeOf taker) . showChar ' ' .
+        showsPrec i order
+    in
+      if i > 0
+        then showParen True go
+        else go
+
 -- Makers and Takers
 
 type EngineState asset = 

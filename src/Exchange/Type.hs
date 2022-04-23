@@ -60,10 +60,10 @@ instance Read Side where
 
 readString :: String -> asset -> ReadP asset
 readString s x = do
-    Read.skipSpaces
-    str <- Read.munch1 (Char.isAlphaNum)
-    if map Char.toUpper str == map Char.toUpper s
-      then return x
-      else Read.pfail
+  Read.skipSpaces
+  str <- Read.munch1 (Char.isAlphaNum)
+  if map Char.toUpper str == map Char.toUpper s
+    then return x
+    else Read.pfail
 
 

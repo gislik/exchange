@@ -44,6 +44,7 @@ library
 executable exchange-exe
   main-is: Main.hs
   other-modules:
+      Command
       Paths_exchange
   hs-source-dirs:
       app
