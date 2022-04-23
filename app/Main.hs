@@ -16,26 +16,27 @@ import System.Exit (ExitCode(ExitSuccess), exitSuccess)
 import System.IO (hFlush, stdout)
 import Exchange.Book (Book)
 import Exchange (Exchange)
-import Exchange.Type 
+import Exchange.Type
 import Command
 
 main :: IO ()
 main = do
   handleKeyboardSignal
-  Exchange.runWith book $ do
+  Exchange.runWith orderbook $ do
     forever $ do
-      book' <- Exchange.orderbook
+      book <- Exchange.orderbook
       time <- Exchange.clock
       command <- liftIO $ do
-        Book.print book'
+        Book.print book
         putStr $ show time
-        putStr " => Enter trade: "
+        putStr " => Enter command: "
         hFlush stdout
         readLn `catch` parseErrorHandler
       handleCommand command
       return ()
 
-handleCommand :: (Show asset, Typeable asset, Eq asset) => Command asset -> Exchange asset IO ()
+handleCommand :: (Show asset, Typeable asset, Eq asset) 
+  => Command asset -> Exchange asset IO ()
 handleCommand command =
   case command of
     Order taker -> do
@@ -50,7 +51,7 @@ handleCommand command =
     Cancel maker -> do
       liftIO $ putStrLn ""
       Exchange.cancel maker
-    Blotter asset -> do
+    Blotter _-> do
       trades <- Exchange.blotter
       liftIO $ do
         putStrLn ""
@@ -66,8 +67,8 @@ handleCommand command =
     Exit ->
       liftIO $ exitSuccess
 
-book :: Book Asset.BTC
-book = 
+orderbook :: Book Asset.BTC
+orderbook = 
   foldr Book.newOrder Book.empty
     [
       Order.Maker (Order.limit Ask Asset.BTC (Time 3) (Amount 50) (Price 102))

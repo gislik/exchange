@@ -1,19 +1,19 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Exchange (
   module Exchange
 , module Exchange.Entry
 , module Exchange.Type
 ) where 
 
-import qualified Control.Monad.Trans.State.Strict as State
+import qualified Control.Monad.State.Strict as State
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
-import Control.Monad.Trans.State.Strict (StateT)
+import Control.Monad.State.Strict (StateT, MonadState, MonadIO)
 import Exchange.Trade (Trade)
 import Exchange.Book (Book)
 import Exchange.Entry
 import Exchange.Type
-
 
 -- Exchange State
 data ExchangeState asset =
@@ -43,13 +43,18 @@ modifyTrades :: ([Trade asset] -> [Trade asset]) -> ExchangeState asset -> Excha
 modifyTrades f state =
   state { stateTrades = f (stateTrades state) }
 
+-- Engine
+type Engine asset m =
+  StateT (ExchangeState asset) m
+
 -- Exchange
-type Exchange asset m = 
-  StateT (ExchangeState asset) m 
+newtype Exchange asset m a = 
+  Exchange (Engine asset m a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadState (ExchangeState asset))
 
 runWith :: Monad m => Book asset -> Exchange asset m a -> m a
-runWith book ex = 
-  State.evalStateT ex (mempty { stateBookOf = book })
+runWith book (Exchange engine) = do
+  State.evalStateT engine (mempty { stateBookOf = book })
 
 run :: Monad m => Exchange asset m a -> m a
 run = 
@@ -72,15 +77,15 @@ trade order = do
     modifyTrades (++trades)
   return trades
 
-blotter :: Monad m => Exchange asset m [Trade asset]
-blotter = do
-  State.gets stateTrades
-
 cancel :: Eq asset => Monad m => Order.Maker asset -> Exchange asset m ()
 cancel maker = 
   State.modify $ 
     modifyBook (Book.cancel maker) .
     modifyTime (+1)
+
+blotter :: Monad m => Exchange asset m [Trade asset]
+blotter = 
+  State.gets stateTrades
 
 orderbook :: Monad m => Exchange asset m (Book asset)
 orderbook =
