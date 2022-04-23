@@ -21,14 +21,15 @@ data ExchangeState asset =
   {
     stateBookOf :: Book asset
   , stateTimeOf :: Time
+  , stateTrades :: [Trade asset]
   }
 
 instance Semigroup (ExchangeState asset) where
-  ExchangeState book1 time1 <> ExchangeState book2 time2 =
-    ExchangeState (book1 <> book2) (time1 <> time2)
+  ExchangeState book1 time1 trades1 <> ExchangeState book2 time2 trades2 =
+    ExchangeState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2)
 
 instance Monoid (ExchangeState asset) where
-  mempty = ExchangeState Book.empty 0 
+  mempty = ExchangeState Book.empty 0 []
 
 modifyBook :: (Book asset -> Book asset) -> ExchangeState asset -> ExchangeState asset
 modifyBook f state = 
@@ -37,6 +38,10 @@ modifyBook f state =
 modifyTime :: (Time -> Time) -> ExchangeState asset -> ExchangeState asset
 modifyTime f state =
   state { stateTimeOf = f (stateTimeOf state) }
+
+modifyTrades :: ([Trade asset] -> [Trade asset]) -> ExchangeState asset -> ExchangeState asset
+modifyTrades f state =
+  state { stateTrades = f (stateTrades state) }
 
 -- Exchange
 type Exchange asset m = 
@@ -63,8 +68,13 @@ trade order = do
       Book.trade (setTimeOf order time) book
   State.modify $ 
     modifyBook (const book') .
-    modifyTime (+1) 
+    modifyTime (+1) .
+    modifyTrades (++trades)
   return trades
+
+blotter :: Monad m => Exchange asset m [Trade asset]
+blotter = do
+  State.gets stateTrades
 
 cancel :: Eq asset => Monad m => Order.Maker asset -> Exchange asset m ()
 cancel maker = 

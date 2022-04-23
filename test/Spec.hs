@@ -498,6 +498,20 @@ main = hspec $ do
         trades <- Exchange.runWith book $ do
           Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
         length trades `shouldBe` 1
+
+      it "should be appended to the blotter" $ do
+
+        trades <- Exchange.runWith book $ do
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
+          Exchange.blotter
+        length trades `shouldBe ` 1
+
+        trades <- Exchange.runWith book $ do
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 30)))
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 30)))
+          Exchange.blotter
+        length trades `shouldBe ` 2
+        
         
     context "when a limit order isn't fully matched" $ do
 
@@ -552,3 +566,4 @@ main = hspec $ do
           [
             Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
           ]
+

@@ -50,6 +50,15 @@ handleCommand command =
     Cancel maker -> do
       liftIO $ putStrLn ""
       Exchange.cancel maker
+    Blotter asset -> do
+      trades <- Exchange.blotter
+      liftIO $ do
+        putStrLn ""
+        putStrLn "Blotter"
+        putStrLn "------"
+        forM_ trades print 
+        putStrLn "------"
+        putStrLn ""
     Unknown ->
       liftIO $ do
         putStrLn "unknown command"

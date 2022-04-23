@@ -10,6 +10,7 @@ import Exchange
 data Command asset =
     Order (Order.Taker asset)
   | Cancel (Order.Maker asset)
+  | Blotter asset
   | Unknown 
   | Exit
   deriving (Show)
@@ -31,6 +32,8 @@ readCommand = do
     "cancel" -> do
       side <- readP
       Cancel <$> readMaker side
+    "blotter" -> do
+      Blotter <$> readP
     "exit" -> 
       return Exit
     _ ->
