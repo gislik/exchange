@@ -8,7 +8,6 @@ import Exchange.Trade (Trade(Trade))
 import Exchange.Type
 import Exchange.Entry
 
-
 main :: IO ()
 main = hspec $ do
 
@@ -70,16 +69,30 @@ main = hspec $ do
 
     context "when canceling an order" $ do
 
-      it "should be removed" $ do
+      it "should be removed if matched" $ do
 
         let
           maker =
-            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 5) (Amount 0) (Price 22))
         
         Order.cancel maker makers `shouldBe`
           [
             Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
           , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+          ]
+
+
+      it "should not be removed if not matched" $ do
+        let
+          maker =
+            Order.Maker (Order.limit Ask Asset.BTC (Time 5) (Amount 100) (Price 22))
+        
+        Order.cancel maker makers `shouldBe`
+          [
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
+          , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
           , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
           ]
 

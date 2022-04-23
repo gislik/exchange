@@ -87,7 +87,11 @@ allOrNothing side asset time amount price =
 -- Maker
 newtype Maker asset = 
   Maker (Order asset)
-    deriving (Show, Eq)
+    deriving (Show)
+
+instance Eq asset => Eq (Maker asset) where
+  Maker order1 == Maker order2 =
+    setTimeOf order1 0 == setTimeOf order2 0 -- makers are equal up to their time
 
 instance GetEntry Maker asset where
   sideOf   (Maker order) = sideOf order

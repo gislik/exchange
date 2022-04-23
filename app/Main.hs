@@ -47,7 +47,8 @@ handleCommand command =
         forM_ trades print 
         putStrLn "------"
         putStrLn ""
-    Cancel maker ->
+    Cancel maker -> do
+      liftIO $ putStrLn ""
       Exchange.cancel maker
     Unknown ->
       liftIO $ do
