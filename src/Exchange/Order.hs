@@ -168,9 +168,26 @@ accAmount state =
   case state of
     (_, _, amount) -> amount
     
-
 toMaker :: Taker asset -> Maker asset
 toMaker taker = Maker (getTakerOrder taker)
+
+engine_ :: Maybe (Trade asset) -> Maker asset -> EngineState asset -> EngineState asset
+engine_ mtrade maker (makers', trades', amount') =
+  let
+    decAmountBy maker' trade' = 
+      decAmountOf maker' (amountOf trade')
+    accAmountOf trade' =
+      amount' + amountOf trade'
+    isMakerAfter trade' =
+      amountOf maker - amountOf trade' > 0
+  in
+    case mtrade of 
+      Just trade' | isMakerAfter trade' -> 
+        (decAmountBy maker trade':makers', trade':trades', accAmountOf trade')
+      Just trade' ->
+        (makers', trade':trades', accAmountOf trade')
+      Nothing | otherwise -> 
+        (maker:makers', trades', amount')
 
 match :: Maker asset -> Taker asset -> Maybe (Trade asset)
 match maker taker = 
@@ -206,22 +223,8 @@ trade taker makers =
           (toMaker taker:makers', trades')
         _ ->
           (makers', trades')
-    
-engine_ :: Maybe (Trade asset) -> Maker asset -> EngineState asset -> EngineState asset
-engine_ mtrade maker (makers', trades', amount') =
-  let
-    decAmountBy maker' trade' = 
-      decAmountOf maker' (amountOf trade')
-    accAmountOf trade' =
-      amount' + amountOf trade'
-    isMakerAfter trade' =
-      amountOf maker - amountOf trade' > 0
-  in
-    case mtrade of 
-      Just trade' | isMakerAfter trade' -> 
-        (decAmountBy maker trade':makers', trade':trades', accAmountOf trade')
-      Just trade' ->
-        (makers', trade':trades', accAmountOf trade')
-      Nothing | otherwise -> 
-        (maker:makers', trades', amount')
 
+cancel :: Eq asset => Maker asset -> [Maker asset] -> [Maker asset]
+cancel maker makers = 
+  filter (/= maker) makers
+    

@@ -5,6 +5,7 @@ import qualified Control.Concurrent as Thread
 import qualified Exchange.Asset as Asset
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
+import qualified Exchange
 import Data.Typeable (Typeable)
 import Data.Functor (void)
 import Control.Exception (throwTo)
@@ -33,7 +34,7 @@ main = do
       handleCommand command
       return ()
 
-handleCommand :: (Show asset, Typeable asset) => Command asset -> Exchange asset IO ()
+handleCommand :: (Show asset, Typeable asset, Eq asset) => Command asset -> Exchange asset IO ()
 handleCommand command =
   case command of
     Order taker -> do
@@ -45,11 +46,8 @@ handleCommand command =
         forM_ trades print 
         putStrLn "------"
         putStrLn ""
-    Cancel taker ->
-      liftIO $ do
-        putStr "cancel "
-        print taker
-        putStrLn ""
+    Cancel maker ->
+      cancel maker
     Unknown ->
       liftIO $ do
         putStrLn "unknown command"

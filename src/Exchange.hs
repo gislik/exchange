@@ -66,6 +66,12 @@ trade order = do
     modifyTime (+1) 
   return trades
 
+cancel :: Eq asset => Monad m => Order.Maker asset -> Exchange asset m ()
+cancel maker = 
+  State.modify $ 
+    modifyBook (Book.cancel maker) .
+    modifyTime (+1)
+
 orderbook :: Monad m => Exchange asset m (Book asset)
 orderbook =
   State.gets stateBookOf

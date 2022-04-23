@@ -52,9 +52,17 @@ trade taker book =
   in
     (book', trades')
 
+cancel :: Eq asset => Order.Maker asset -> Book asset -> Book asset
+cancel maker book =
+  book {
+    bids = Order.cancel maker (bids book)
+  , asks = Order.cancel maker (asks book)
+  }
+
 print :: (Show asset, Typeable asset) => Book asset -> IO ()
 print book = do
-  let typeOfBook = show (typeOf book)
+  let 
+    typeOfBook = show (typeOf book)
   putStrLn typeOfBook
   putStrLn (replicate (length typeOfBook) '=')
   mapM_ Order.print $ 

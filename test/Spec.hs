@@ -1,6 +1,7 @@
 import qualified Exchange.Asset as Asset
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
+import qualified Exchange
 import Test.QuickCheck 
 import Test.Hspec
 import Exchange.Trade (Trade(Trade))
@@ -64,6 +65,21 @@ main = hspec $ do
           , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
           ]
         )
+
+    context "when canceling an order" $ do
+
+      it "should be removed" $ do
+
+        let
+          maker =
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
+        
+        Order.cancel maker makers `shouldBe`
+          [
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+          ]
 
   describe "Order {Limit}" $ do
 
@@ -497,3 +513,27 @@ main = hspec $ do
           trade ask
           orderbook
         book' `shouldBe` foldr Book.newOrder book [Order.toMaker ask]
+
+    context "when an order is canceled" $ do
+
+      let
+        book = 
+          foldr Book.newOrder Book.empty 
+            [
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+            ]
+
+      it "should be removed" $ do
+        let
+          maker =
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+
+        book' <- runWith book $ do
+          Exchange.cancel maker
+          Exchange.orderbook
+
+        Book.bids book' `shouldBe` 
+          [
+            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+          ]
