@@ -11,6 +11,9 @@ data Command asset =
     Order (Order.Taker asset)
   | Cancel (Order.Maker asset)
   | Blotter asset
+  | Balance
+  | Deposit Amount
+  | Withdraw Amount
   | Unknown 
   | Exit
   deriving (Show)
@@ -32,8 +35,16 @@ readCommand = do
     "cancel" -> do
       side <- readP
       Cancel <$> readMaker side
-    "blotter" -> do
+    "blotter" -> 
       Blotter <$> readP
+    "balance" ->
+      return Balance
+    "deposit" -> do
+      amount <- readP
+      return $ Deposit (Amount amount)
+    "withdraw" -> do
+      amount <- readP
+      return $ Withdraw (Amount amount)
     "exit" -> 
       return Exit
     _ ->

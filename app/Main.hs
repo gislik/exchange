@@ -37,35 +37,39 @@ main = do
 
 handleCommand :: (Show asset, Typeable asset, Eq asset) 
   => Command asset -> Exchange asset IO ()
-handleCommand command =
+handleCommand command = do
+  liftIO $ putStrLn ""
   case command of
     Order taker -> do
       trades <- Exchange.trade taker
       liftIO $ do
-        putStrLn ""
         putStrLn "Trades"
         putStrLn "------"
         forM_ trades print 
         putStrLn "------"
-        putStrLn ""
     Cancel maker -> do
-      liftIO $ putStrLn ""
       Exchange.cancel maker
     Blotter _-> do
       trades <- Exchange.blotter
       liftIO $ do
-        putStrLn ""
         putStrLn "Blotter"
         putStrLn "------"
         forM_ trades print 
         putStrLn "------"
-        putStrLn ""
+    Balance -> do
+      balance <- Exchange.balance
+      liftIO $ do
+        putStrLn $ "Balance: " ++ show balance
+    Deposit amount ->
+      Exchange.deposit amount
+    Withdraw amount ->
+      Exchange.withdraw amount
     Unknown ->
       liftIO $ do
         putStrLn "unknown command"
-        putStrLn ""
     Exit ->
       liftIO $ exitSuccess
+  liftIO $ putStrLn ""
 
 orderbook :: Book Asset.BTC
 orderbook = 
