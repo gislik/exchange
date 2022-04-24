@@ -8,10 +8,10 @@ import qualified Exchange.Book  as Book
 import qualified Exchange
 import Data.Typeable (Typeable)
 import Data.Functor (void)
-import Control.Exception (throwTo)
-import Control.Monad.IO.Class (liftIO)
+import Control.Exception (SomeException, throwTo, catch)
 import Control.Monad (forM_, forever)
-import Control.Exception (catch, SomeException)
+import Control.Monad.Except (catchError)
+import Control.Monad.IO.Class (liftIO)
 import System.Exit (ExitCode(ExitSuccess), exitSuccess)
 import System.IO (hFlush, stdout)
 import Exchange.Book (Book)
@@ -32,7 +32,7 @@ main = do
         putStr " => Enter command: "
         hFlush stdout
         readLn `catch` parseErrorHandler
-      handleCommand command
+      handleCommand command `catchError` (liftIO . putStrLn)
       return ()
 
 handleCommand :: (Show asset, Typeable asset, Eq asset) 

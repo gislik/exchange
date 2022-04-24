@@ -38,6 +38,7 @@ executables:
     dependencies:
     - exchange
     - unix
+    - mtl
 
 tests:
   exchange-test:

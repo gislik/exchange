@@ -7,10 +7,12 @@ module Exchange (
 ) where 
 
 import qualified Control.Monad.State.Strict as State
+import qualified Control.Monad.Except as Exception
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
 import Control.Applicative (Alternative)
 import Control.Monad.State.Strict (StateT, MonadState, MonadIO)
+import Control.Monad.Except (ExceptT, MonadError)
 import Exchange.Trade (Trade)
 import Exchange.Book (Book)
 import Exchange.Entry
@@ -49,20 +51,34 @@ modifyBalance :: (Amount -> Amount) -> ExchangeState asset -> ExchangeState asse
 modifyBalance f state =
   state { stateBalance = f (stateBalance state) }
 
+type Error = String
+
 -- Engine
 type Engine asset m =
-  StateT (ExchangeState asset) m
+  ExceptT Error (StateT (ExchangeState asset) m)
 
 -- Exchange
-newtype Exchange asset m a = 
+newtype Exchange asset m a =
   Exchange (Engine asset m a)
-  deriving (Functor, Applicative, Alternative, Monad, MonadIO, MonadState (ExchangeState asset))
+  deriving 
+    ( 
+      Functor
+    , Applicative
+    , Alternative
+    , Monad
+    , MonadIO
+    , MonadState (ExchangeState asset)
+    , MonadError Error
+    )
 
-runWith :: Monad m => Book asset -> Exchange asset m a -> m a
+runWith :: MonadFail m => Book asset -> Exchange asset m a -> m a
 runWith book (Exchange engine) = do
-  State.evalStateT engine (mempty { stateBookOf = book })
+  res <- State.evalStateT (Exception.runExceptT engine) (mempty { stateBookOf = book }) 
+  case res of
+    Left err -> fail err
+    Right res' -> return res'
 
-run :: Monad m => Exchange asset m a -> m a
+run :: MonadFail m => Exchange asset m a -> m a
 run = 
   runWith Book.empty
 
@@ -116,4 +132,4 @@ withdraw amount = do
   if amount <= bal
     then State.modify $
     modifyBalance (+(-amount))
-  else return ()
+  else Exception.throwError "withdrawal amount greater than balance"

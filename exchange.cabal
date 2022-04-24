@@ -52,6 +52,7 @@ executable exchange-exe
   build-depends:
       base >=4.7 && <5
     , exchange
+    , mtl
     , unix
   default-language: Haskell2010
 
