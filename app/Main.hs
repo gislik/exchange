@@ -8,7 +8,7 @@ import qualified Exchange.Book  as Book
 import qualified Exchange
 import Data.Typeable (Typeable)
 import Data.Functor (void)
-import Control.Exception (SomeException, throwTo, catch)
+import Control.Exception (throwTo)
 import Control.Monad (forM_, forever)
 import Control.Monad.Except (catchError)
 import Control.Monad.IO.Class (liftIO)
@@ -24,14 +24,11 @@ main = do
   handleKeyboardSignal
   Exchange.runWith orderbook $ do
     forever $ do
-      book <- Exchange.orderbook
-      time <- Exchange.clock
       command <- liftIO $ do
         newline
-        putStr $ show time
-        putStr " => Enter command: "
+        putStr $ "Enter command: "
         hFlush stdout
-        readLn `catch` parseErrorHandler <* newline
+        getCommand <* newline
       handleCommand command `catchError` (liftIO . putStrLn)
       return ()
 
@@ -39,7 +36,7 @@ handleCommand :: (Show asset, Typeable asset, Eq asset)
   => Command asset -> Exchange asset IO ()
 handleCommand command = do
   case command of
-    Book asset -> do
+    Book _ -> do
       book <- Exchange.orderbook
       liftIO $ do
         Book.print book
@@ -52,6 +49,9 @@ handleCommand command = do
         putStrLn "------"
     Cancel maker -> do
       Exchange.cancel maker
+    Clock -> do
+      time <- Exchange.clock
+      liftIO $ print time
     Blotter _-> do
       trades <- Exchange.blotter
       liftIO $ do
@@ -88,14 +88,6 @@ orderbook =
     , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (Amount 30) (Price 97))
     ]
 
-
-parseErrorHandler :: SomeException -> IO (Command asset)
-parseErrorHandler _ =  do
-  return Unknown 
-
-newline :: IO ()
-newline =
-  putStrLn ""
 
 --- signals
 --

@@ -4,6 +4,7 @@ import qualified Data.Char as Char
 import qualified Text.ParserCombinators.ReadP as Read
 import qualified Exchange.Order as Order
 import Text.ParserCombinators.ReadP (ReadP)
+import Control.Exception (SomeException, catch)
 import Exchange.Order (Order)
 import Exchange
 
@@ -12,6 +13,7 @@ data Command asset =
   | Order (Order.Taker asset)
   | Cancel (Order.Maker asset)
   | Blotter asset
+  | Clock
   | Balance
   | Deposit Amount
   | Withdraw Amount
@@ -40,6 +42,8 @@ readCommand = do
       Cancel <$> readMaker side
     "blotter" -> 
       Blotter <$> readP
+    "clock" ->
+      return Clock
     "balance" ->
       return Balance
     "deposit" -> do
@@ -75,3 +79,17 @@ readMaker side = do
 
 readP :: Read a => ReadP a
 readP = Read.readS_to_P reads
+
+newline :: IO ()
+newline =
+  putStrLn ""
+
+getCommand :: Read asset => IO (Command asset)
+getCommand = do
+  readLn `catch` parseErrorHandler 
+
+
+parseErrorHandler :: SomeException -> IO (Command asset)
+parseErrorHandler _ =  do
+  return Unknown 
+
