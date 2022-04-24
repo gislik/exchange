@@ -27,19 +27,22 @@ main = do
       book <- Exchange.orderbook
       time <- Exchange.clock
       command <- liftIO $ do
-        Book.print book
+        newline
         putStr $ show time
         putStr " => Enter command: "
         hFlush stdout
-        readLn `catch` parseErrorHandler
+        readLn `catch` parseErrorHandler <* newline
       handleCommand command `catchError` (liftIO . putStrLn)
       return ()
 
 handleCommand :: (Show asset, Typeable asset, Eq asset) 
   => Command asset -> Exchange asset IO ()
 handleCommand command = do
-  liftIO $ putStrLn ""
   case command of
+    Book asset -> do
+      book <- Exchange.orderbook
+      liftIO $ do
+        Book.print book
     Order taker -> do
       trades <- Exchange.trade taker
       liftIO $ do
@@ -60,16 +63,17 @@ handleCommand command = do
       balance <- Exchange.balance
       liftIO $ do
         putStrLn $ "Balance: " ++ show balance
-    Deposit amount ->
+    Deposit amount -> do
       Exchange.deposit amount
-    Withdraw amount ->
+      handleCommand Balance
+    Withdraw amount -> do
       Exchange.withdraw amount
+      handleCommand Balance
     Unknown ->
       liftIO $ do
         putStrLn "unknown command"
     Exit ->
       liftIO $ exitSuccess
-  liftIO $ putStrLn ""
 
 orderbook :: Book Asset.BTC
 orderbook = 
@@ -89,8 +93,12 @@ parseErrorHandler :: SomeException -> IO (Command asset)
 parseErrorHandler _ =  do
   return Unknown 
 
---- signals
+newline :: IO ()
+newline =
+  putStrLn ""
 
+--- signals
+--
 handleKeyboardSignal :: IO ()
 handleKeyboardSignal = do
   tid <- Thread.myThreadId

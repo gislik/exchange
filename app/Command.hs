@@ -8,7 +8,8 @@ import Exchange.Order (Order)
 import Exchange
 
 data Command asset =
-    Order (Order.Taker asset)
+    Book asset
+  | Order (Order.Taker asset)
   | Cancel (Order.Maker asset)
   | Blotter asset
   | Balance
@@ -28,6 +29,8 @@ readCommand = do
   Read.skipSpaces
   str <- map Char.toLower <$> Read.munch1 (Char.isAlphaNum)
   case str of
+    "book" ->
+      Book <$> readP 
     "bid" -> 
       Order <$> readTaker Bid
     "ask" -> 
