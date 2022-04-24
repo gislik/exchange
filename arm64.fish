@@ -1,2 +1,2 @@
-set -x C_INCLUDE_PATH "(xcrun --show-sdk-path)/usr/include/ffi"
+set -x C_INCLUDE_PATH (xcrun --show-sdk-path)/usr/include/ffi
 
