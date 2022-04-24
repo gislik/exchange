@@ -2,6 +2,7 @@ import qualified Exchange.Asset as Asset
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
 import qualified Exchange
+import Control.Exception (evaluate)
 import Test.QuickCheck (property, forAll, chooseAny, suchThat)
 import Exchange.Trade (Trade(Trade))
 import Test.Hspec
@@ -15,29 +16,45 @@ main = hspec $ do
 
     it "should be printable" $ do
 
-      show (Amount 3) `shouldBe` "Amount 3.0"
-      show (Amount 3.0) `shouldBe` "Amount 3.0"
-      show (Amount 2.9) `shouldBe` "Amount 2.9"
+      show (toAmount 3) `shouldBe` "Amount 3.0"
+      show (toAmount 3.0) `shouldBe` "Amount 3.0"
+      show (toAmount 2.9) `shouldBe` "Amount 2.9"
 
-    it "should be instances of num" $ property $ do
+    -- it "should be instances of num" $ property $ do
+    it "should be instances of num" $ forAll (chooseAny `suchThat` \(x, y) -> x >= 0 && y >= 0 && x >= y) $ do
 
-      \x y -> do
+      -- \x y -> do
+      \(x, y) -> do
 
-        (Amount x) + (Amount y) `shouldBe` (Amount $ x+y)
-        (Amount x) - (Amount y) `shouldBe` (Amount $ x-y)
+        (toAmount x) + (toAmount y) `shouldBe` (toAmount $ x+y)
+        (toAmount x) - (toAmount y) `shouldBe` (toAmount $ x-y)
 
     it "should be instances of eq" $ forAll (chooseAny `suchThat` \(x, y) -> x /= y) $ do
 
       \(x, y) -> do
 
-        (Amount x) == (Amount x) `shouldBe` True
-        (Amount x) == (Amount 2) `shouldBe` False
+        (toAmount x) == (toAmount x) `shouldBe` True
+        (toAmount x) == (toAmount 2) `shouldBe` False
+
+
+    it "should be non-negative" $ do
+
+      x <- evaluate (toAmount 0)
+
+      x `shouldBe` toAmount 0
+
+      x <- evaluate (toAmount 1)
+
+      x `shouldBe` toAmount 1
+
+      evaluate (toAmount (-1)) `shouldThrow` anyException
+
 
   describe "Trade" $ do
 
     let
       trade = 
-        Trade Asset.BTC (Time 1) (Amount 2) (Price 3)
+        Trade Asset.BTC (Time 1) (toAmount 2) (Price 3)
 
     it "should have a nice representation" $ do
 
@@ -48,10 +65,10 @@ main = hspec $ do
     let 
       makers =
         [
-          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
-        , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
-        , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
-        , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 20))
+        , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 10))
+        , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 22))
+        , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 12))
         ]
 
     it "should have split makers, i.e. bids and asks, to the correct sides" $ do
@@ -59,13 +76,13 @@ main = hspec $ do
       Order.splitSides makers `shouldBe` 
         (
           [
-            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
-          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 10))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 12))
           ]
         ,
           [
-            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
-          , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 20))
+          , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 22))
           ]
         )
 
@@ -75,40 +92,40 @@ main = hspec $ do
 
         let
           maker =
-            Order.Maker (Order.limit Ask Asset.BTC (Time 5) (Amount 0) (Price 22))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 5) (toAmount 0) (Price 22))
 
         Order.cancel maker makers `shouldBe`
           [
-            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
-          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
-          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 20))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 10))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 12))
           ]
 
 
       it "should not be removed if not matched" $ do
         let
           maker =
-            Order.Maker (Order.limit Ask Asset.BTC (Time 5) (Amount 100) (Price 22))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 5) (toAmount 100) (Price 22))
 
         Order.cancel maker makers `shouldBe`
           [
-            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 20))
-          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 10))
-          , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 0) (Price 22))
-          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 0) (Price 12))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 20))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 10))
+          , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 0) (Price 22))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 0) (Price 12))
           ]
 
   describe "Order {Limit}" $ do
 
     let
       btcbid =
-        Order.limit Bid Asset.BTC (Time 1) (Amount 0) (Price 0)
+        Order.limit Bid Asset.BTC (Time 1) (toAmount 0) (Price 0)
       ethbid =
-        Order.limit Bid Asset.ETH (Time 2) (Amount 0) (Price 0)
+        Order.limit Bid Asset.ETH (Time 2) (toAmount 0) (Price 0)
       btcask =
-        Order.limit Ask Asset.BTC (Time 3) (Amount 0) (Price 0)
+        Order.limit Ask Asset.BTC (Time 3) (toAmount 0) (Price 0)
       ethask =
-        Order.limit Ask Asset.ETH (Time 4) (Amount 0) (Price 0)
+        Order.limit Ask Asset.ETH (Time 4) (toAmount 0) (Price 0)
 
     it "should have an asset" $ do
 
@@ -144,13 +161,13 @@ main = hspec $ do
 
       let 
         maker1 = 
-          Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 1) (Price 10))
         taker1 = 
-          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (toAmount 1) (Price 20))
         maker2 =
-          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 1) (Price 20))
         taker2 =
-          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 1) (Price 10))
 
       it "should not match" $ do
 
@@ -178,38 +195,38 @@ main = hspec $ do
 
       let
         maker1 =
-          Order.Maker (Order.limit Bid Asset.BTC (Time 1) (Amount 2) (Price 15))
+          Order.Maker (Order.limit Bid Asset.BTC (Time 1) (toAmount 2) (Price 15))
         taker1 =
-          Order.Taker (Order.limit Ask Asset.BTC (Time 2) (Amount 1) (Price 15))
+          Order.Taker (Order.limit Ask Asset.BTC (Time 2) (toAmount 1) (Price 15))
         trade1 = 
-          Trade Asset.BTC (Time 2) (Amount 1) (Price 15)
+          Trade Asset.BTC (Time 2) (toAmount 1) (Price 15)
         maker2 =
-          Order.Maker (Order.limit Ask Asset.BTC (Time 3) (Amount 2) (Price 15))
+          Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 2) (Price 15))
         taker2 =
-          Order.Taker (Order.limit Bid Asset.BTC (Time 4) (Amount 1) (Price 15))
+          Order.Taker (Order.limit Bid Asset.BTC (Time 4) (toAmount 1) (Price 15))
         trade2 = 
-          Trade Asset.BTC (Time 4) (Amount 1) (Price 15)
+          Trade Asset.BTC (Time 4) (toAmount 1) (Price 15)
         maker3 =
-          Order.Maker (Order.limit Bid Asset.BTC (Time 5) (Amount 4) (Price 15))
+          Order.Maker (Order.limit Bid Asset.BTC (Time 5) (toAmount 4) (Price 15))
         taker3 =
-          Order.Taker (Order.limit Ask Asset.BTC (Time 6) (Amount 5) (Price 15))
+          Order.Taker (Order.limit Ask Asset.BTC (Time 6) (toAmount 5) (Price 15))
         trade3 =
-            Trade Asset.BTC (Time 6) (Amount 4) (Price 15)
+            Trade Asset.BTC (Time 6) (toAmount 4) (Price 15)
         maker4 = 
           [maker1, maker3]
         taker4 = 
           taker3
         trades = 
           [
-            Trade Asset.BTC (Time 6) (Amount 2) (Price 15)
-          , Trade Asset.BTC (Time 6) (Amount 3) (Price 15)
+            Trade Asset.BTC (Time 6) (toAmount 2) (Price 15)
+          , Trade Asset.BTC (Time 6) (toAmount 3) (Price 15)
           ]
         maker5 =
-          Order.Maker (Order.limit Bid Asset.BTC (Time 1) (Amount 2) (Price 15))
+          Order.Maker (Order.limit Bid Asset.BTC (Time 1) (toAmount 2) (Price 15))
         taker5 =
-          Order.Taker (Order.limit Ask Asset.BTC (Time 2) (Amount 3) (Price 15))
+          Order.Taker (Order.limit Ask Asset.BTC (Time 2) (toAmount 3) (Price 15))
         trade5 = 
-          Trade Asset.BTC (Time 2) (Amount 2) (Price 15)
+          Trade Asset.BTC (Time 2) (toAmount 2) (Price 15)
 
       it "should match" $ do
 
@@ -257,25 +274,25 @@ main = hspec $ do
 
       let
         maker1 =
-          Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 20))
+          Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 20))
         taker1 =
-          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (toAmount 1) (Price 10))
         trade1 =
-          Trade Asset.BTC (Time 0) (Amount 1) (Price 20)
+          Trade Asset.BTC (Time 0) (toAmount 1) (Price 20)
         maker2 =
-          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 10))
+          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 10))
         taker2 =
-          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 1) (Price 20))
         trade2 =
-          Trade Asset.BTC (Time 0) (Amount 1) (Price 10)
+          Trade Asset.BTC (Time 0) (toAmount 1) (Price 10)
         maker3 =
-          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 8) (Price 15))
+          Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 8) (Price 15))
         taker3 =
-          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 10) (Price 20))
+          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 10) (Price 20))
         trades =
           [
-            Trade Asset.BTC (Time 0) (Amount 2) (Price 10)
-          , Trade Asset.BTC (Time 0) (Amount 8) (Price 15)
+            Trade Asset.BTC (Time 0) (toAmount 2) (Price 10)
+          , Trade Asset.BTC (Time 0) (toAmount 8) (Price 15)
           ]
 
       it "should match" $ do
@@ -320,13 +337,13 @@ main = hspec $ do
 
       let 
         maker1 = 
-          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 0) (toAmount 1) (Price 10))
         taker1 = 
-          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 0) (toAmount 1) (Price 20))
         maker2 =
-          Order.Maker (Order.allOrNothing Ask Asset.BTC (Time 0) (Amount 1) (Price 20))
+          Order.Maker (Order.allOrNothing Ask Asset.BTC (Time 0) (toAmount 1) (Price 20))
         taker2 =
-          Order.Taker (Order.allOrNothing Bid Asset.BTC (Time 0) (Amount 1) (Price 10))
+          Order.Taker (Order.allOrNothing Bid Asset.BTC (Time 0) (toAmount 1) (Price 10))
 
       it "should result in no trades and unchanged makers" $ do
 
@@ -348,27 +365,27 @@ main = hspec $ do
 
       let
         maker1 =
-          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 1) (Amount 2) (Price 15))
+          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 1) (toAmount 2) (Price 15))
         taker1 =
-          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 2) (Amount 1) (Price 15))
+          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 2) (toAmount 1) (Price 15))
         trade1 = 
-          Trade Asset.BTC (Time 2) (Amount 1) (Price 15)
+          Trade Asset.BTC (Time 2) (toAmount 1) (Price 15)
         maker2 =
-          Order.Maker (Order.allOrNothing Ask Asset.BTC (Time 3) (Amount 2) (Price 15))
+          Order.Maker (Order.allOrNothing Ask Asset.BTC (Time 3) (toAmount 2) (Price 15))
         taker2 =
-          Order.Taker (Order.allOrNothing Bid Asset.BTC (Time 4) (Amount 1) (Price 15))
+          Order.Taker (Order.allOrNothing Bid Asset.BTC (Time 4) (toAmount 1) (Price 15))
         trade2 = 
-          Trade Asset.BTC (Time 4) (Amount 1) (Price 15)
+          Trade Asset.BTC (Time 4) (toAmount 1) (Price 15)
         maker3 =
-          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 5) (Amount 4) (Price 15))
+          Order.Maker (Order.allOrNothing Bid Asset.BTC (Time 5) (toAmount 4) (Price 15))
         taker3 =
-          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 6) (Amount 5) (Price 15))
+          Order.Taker (Order.allOrNothing Ask Asset.BTC (Time 6) (toAmount 5) (Price 15))
         trade3 =
-            Trade Asset.BTC (Time 6) (Amount 4) (Price 15)
+            Trade Asset.BTC (Time 6) (toAmount 4) (Price 15)
         trades = 
           [
-            Trade Asset.BTC (Time 6) (Amount 2) (Price 15)
-          , Trade Asset.BTC (Time 6) (Amount 3) (Price 15)
+            Trade Asset.BTC (Time 6) (toAmount 2) (Price 15)
+          , Trade Asset.BTC (Time 6) (toAmount 3) (Price 15)
           ]
 
       it "should result in trades" $ do
@@ -409,13 +426,13 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty 
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
-            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
             ]
         bid =
-          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
+          Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 15))
         ask =
-          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15))
+          Order.Taker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 15))
 
       it "should end up on the correct side" $ do
 
@@ -429,8 +446,8 @@ main = hspec $ do
 
         bids `shouldBe` 
           [
-            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
-          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 15))
+          , Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
           ]
 
   describe "Exchange" $ do
@@ -478,7 +495,7 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty 
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
             ]
 
       it "should have a book with one entry" $ do
@@ -493,8 +510,8 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty 
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
-            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
             ]
 
       it "should have a book with two entries" $ do
@@ -508,15 +525,15 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
-            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
             ]
 
       it "should result in an error" $ do
 
         let 
           bid =
-            Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 20))
+            Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 20))
 
         Exchange.runWith book (Exchange.trade bid) `shouldThrow` anyException
 
@@ -528,21 +545,21 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty 
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
-            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
             ]
 
       it "should have a book with a single entry left" $ do
 
         book' <- Exchange.runWith book $ do
           Exchange.deposit 100
-          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 30)))
           Exchange.orderbook
         length book' `shouldBe` 1
 
         book' <- Exchange.runWith book $ do
           Exchange.deposit 100
-          Exchange.trade (Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 5)))
+          Exchange.trade (Order.Taker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 5)))
           Exchange.orderbook
         length book' `shouldBe` 1
 
@@ -550,21 +567,21 @@ main = hspec $ do
 
         trades <- Exchange.runWith book $ do
           Exchange.deposit 100
-          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 30)))
         length trades `shouldBe` 1
 
       it "should be appended to the blotter" $ do
 
         trades <- Exchange.runWith book $ do
           Exchange.deposit 100
-          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 30)))
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 30)))
           Exchange.blotter
         length trades `shouldBe ` 1
 
         trades <- Exchange.runWith book $ do
           Exchange.deposit 100
-          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 30)))
-          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 1) (Price 30)))
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 1) (Price 30)))
+          Exchange.trade (Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 1) (Price 30)))
           Exchange.blotter
         length trades `shouldBe ` 2
 
@@ -575,15 +592,15 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty 
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
-            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
             ]
 
       it "should place the rest of the order on the correct side" $ do
 
         let 
           bid =
-            Order.Taker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 15))
+            Order.Taker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 15))
 
         book' <- Exchange.runWith book $ do
           Exchange.deposit 100
@@ -593,7 +610,7 @@ main = hspec $ do
 
         let 
           ask =
-            Order.Taker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 15))
+            Order.Taker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 15))
 
         book' <- Exchange.runWith book $ do
           Exchange.deposit 100
@@ -607,14 +624,14 @@ main = hspec $ do
         book = 
           foldr Book.newOrder Book.empty 
             [
-              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
-            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+              Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
+            , Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
             ]
 
       it "should be removed" $ do
         let
           maker =
-            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (Amount 2) (Price 20))
+            Order.Maker (Order.limit Ask Asset.BTC (Time 0) (toAmount 2) (Price 20))
 
         book' <- Exchange.runWith book $ do
           Exchange.cancel maker
@@ -622,6 +639,6 @@ main = hspec $ do
 
         Book.bids book' `shouldBe` 
           [
-            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (Amount 2) (Price 10))
+            Order.Maker (Order.limit Bid Asset.BTC (Time 0) (toAmount 2) (Price 10))
           ]
 

@@ -69,6 +69,9 @@ handleCommand command = do
     Withdraw amount -> do
       Exchange.withdraw amount
       handleCommand Balance
+    ParseError err ->
+      liftIO $ do
+        putStrLn err
     Unknown ->
       liftIO $ do
         putStrLn "unknown command"
@@ -79,13 +82,13 @@ orderbook :: Book Asset.BTC
 orderbook = 
   foldr Book.newOrder Book.empty
     [
-      Order.Maker (Order.limit Ask Asset.BTC (Time 3) (Amount 50) (Price 102))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 2) (Amount 30) (Price 102))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 3) (Amount 10) (Price 101))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 1) (Amount 10) (Price 101))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 1) (Amount 10) (Price 99))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 2) (Amount 20) (Price 98))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (Amount 30) (Price 97))
+      Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 50) (Price 102))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 2) (toAmount 30) (Price 102))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 10) (Price 101))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 1) (toAmount 10) (Price 101))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 1) (toAmount 10) (Price 99))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 2) (toAmount 20) (Price 98))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (toAmount 30) (Price 97))
     ]
 
 

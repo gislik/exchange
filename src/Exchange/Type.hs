@@ -1,15 +1,37 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Exchange.Type where 
+module Exchange.Type (
+  Amount
+, Price(..)
+, Cost(..)
+, Time(..)
+, Side(..)
+, Style(..)
+, toAmount
+, times
+, readString
+) where 
 
 import qualified Data.Char as Char
 import qualified Text.ParserCombinators.ReadP as Read
 import Text.ParserCombinators.ReadP (ReadP, (+++))
+import Data.Typeable (Typeable, typeOf)
 
 -- Amount
 newtype Amount = 
   Amount Double 
-    deriving (Show, Eq, Ord, Num, Read)
+    deriving (Show, Eq, Ord, Num, Typeable)
+
+toAmount :: Double -> Amount
+toAmount d =
+  if d >= 0
+    then Amount d
+    else error "Amount can only be positive"
+
+instance Read Amount where
+  readsPrec _ = 
+    Read.readP_to_S $ do
+      readType toAmount
 
 instance Semigroup Amount where
   Amount d <> Amount e = 
@@ -90,3 +112,11 @@ readString s x = do
     else Read.pfail
 
 
+readType :: (Num a, Read a, Typeable b) => (a -> b) -> ReadP b
+readType f = do
+  Read.skipSpaces
+  str <- Read.munch1 (Char.isAlphaNum)
+  d <- Read.readS_to_P reads
+  if str == show (typeOf $ f 0)
+    then return (f d)
+    else Read.pfail

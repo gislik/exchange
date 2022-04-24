@@ -4,7 +4,8 @@ import qualified Data.Char as Char
 import qualified Text.ParserCombinators.ReadP as Read
 import qualified Exchange.Order as Order
 import Text.ParserCombinators.ReadP (ReadP)
-import Control.Exception (SomeException, catch)
+import System.IO.Error (isEOFError)
+import Control.Exception (ErrorCall, Handler(..), handleJust, catches)
 import Exchange.Order (Order)
 import Exchange
 
@@ -17,6 +18,7 @@ data Command asset =
   | Balance
   | Deposit Amount
   | Withdraw Amount
+  | ParseError String
   | Unknown 
   | Exit
   deriving (Show)
@@ -28,6 +30,12 @@ instance Read asset => Read (Command asset) where
 
 readCommand :: Read asset => ReadP (Command asset)
 readCommand = do
+  let
+    readAmount = do
+      amount <- readP :: ReadP Double
+      if amount < 0
+        then errorWithoutStackTrace "amount must be non-negative"
+        else return (toAmount amount)
   Read.skipSpaces
   str <- map Char.toLower <$> Read.munch1 (Char.isAlphaNum)
   case str of
@@ -47,11 +55,11 @@ readCommand = do
     "balance" ->
       return Balance
     "deposit" -> do
-      amount <- readP
-      return $ Deposit (Amount amount)
+      amount <- readAmount
+      return $ Deposit amount
     "withdraw" -> do
-      amount <- readP
-      return $ Withdraw (Amount amount)
+      amount <- readAmount
+      return $ Withdraw amount
     "exit" -> 
       return Exit
     _ ->
@@ -64,7 +72,7 @@ readOrder side = do
     <$> pure side 
     <*> readP
     <*> pure mempty 
-    <*> (Amount <$> readP) 
+    <*> (toAmount <$> readP) 
     <*> (Price <$> readP)
 
 readTaker :: Read asset => Side -> ReadP (Order.Taker asset)
@@ -87,10 +95,20 @@ newline =
 
 getCommand :: Read asset => IO (Command asset)
 getCommand = do
-  readLn `catch` parseErrorHandler 
+  (handleIOError readLn) `catches` [Handler parseErrorHandler]
 
 
-parseErrorHandler :: SomeException -> IO (Command asset)
-parseErrorHandler _ =  do
-  return Unknown 
+parseErrorHandler :: ErrorCall -> IO (Command asset)
+parseErrorHandler e = do
+  return $ ParseError (show e)
+
+handleIOError :: IO (Command asset) -> IO (Command asset)
+handleIOError = do
+  let
+    selector err = 
+      if isEOFError err -- ctrl-d
+        then Just Exit
+        else Just (ParseError "command parse error") -- parse errors while readLn happen in io
+  handleJust selector return
+
 
