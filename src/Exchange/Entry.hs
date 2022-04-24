@@ -27,7 +27,6 @@ decAmountOf :: Entry a asset => a asset -> Amount -> a asset
 decAmountOf entry amount =
   setAmountOf entry (amountOf entry - amount)
 
-
 -- time
 incTimeOf :: Entry a asset => a asset -> Time -> a asset
 incTimeOf entry time =
@@ -36,3 +35,8 @@ incTimeOf entry time =
 decTimeOf :: Entry a asset => a asset -> Time -> a asset
 decTimeOf entry time =
   setTimeOf entry (timeOf entry - time)
+
+-- cost
+costOf :: GetEntry a asset => a asset -> Cost 
+costOf entry =
+  (priceOf entry) `times` (amountOf entry)

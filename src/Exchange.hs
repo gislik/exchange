@@ -90,14 +90,21 @@ trade :: Monad m => Order.Taker asset -> Exchange asset m [Trade asset]
 trade order = do
   book <- State.gets stateBookOf
   time <- State.gets stateTimeOf
+  bal <- balance
   let
     (book', trades) = 
       Book.trade (setTimeOf order time) book
-  State.modify $ 
-    modifyBook (const book') .
-    modifyTime (+1) .
-    modifyTrades (++trades)
-  return trades
+    c =
+      foldMap costOf trades
+  if c <= (Price 1) `times` bal
+    then do
+      State.modify $
+        modifyBook (const book') .
+        modifyTime (+1) .
+        modifyTrades (++trades)
+      return trades
+    else Exception.throwError "cost of trades greater than balance"
+
 
 cancel :: Eq asset => Monad m => Order.Maker asset -> Exchange asset m ()
 cancel maker = 

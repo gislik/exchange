@@ -29,7 +29,30 @@ instance Semigroup Price where
     Price (price1 + price2)
 
 instance Monoid Price where
-  mempty = Price 0
+  mempty = 
+    Price 0
+
+-- Cost
+newtype Cost =
+  Cost Double
+    deriving (Show, Eq, Ord, Num, Read)
+
+instance Semigroup Cost where
+  Cost cost1 <> Cost cost2 =
+    Cost (cost1 + cost2)
+
+instance Monoid Cost where
+  mempty = 
+    Cost 0
+
+times :: Price -> Amount -> Cost
+times price amount =
+  let
+    Price p = price
+    Amount a = amount
+  in
+    Cost (p * a)
+  
 
 -- Time
 newtype Time = 
