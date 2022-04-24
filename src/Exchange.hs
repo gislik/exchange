@@ -11,6 +11,7 @@ import qualified Control.Monad.Except as Exception
 import qualified Exchange.Order as Order
 import qualified Exchange.Book  as Book
 import Control.Applicative (Alternative)
+import Control.Monad (when)
 import Control.Monad.State.Strict (StateT, MonadState, MonadIO)
 import Control.Monad.Except (ExceptT, MonadError)
 import Exchange.Trade (Trade)
@@ -94,16 +95,16 @@ trade order = do
   let
     (book', trades) = 
       Book.trade (setTimeOf order time) book
-    c =
+    cost' =
       foldMap costOf trades
-  if c <= (Price 1) `times` bal
-    then do
-      State.modify $
-        modifyBook (const book') .
-        modifyTime (+1) .
-        modifyTrades (++trades)
-      return trades
-    else Exception.throwError "cost of trades greater than balance"
+  when (cost' > (Price 1) `times` bal) $ do
+    Exception.throwError "cost of trades greater than balance"
+    return ()
+  State.modify $
+    modifyBook (const book') .
+    modifyTime (+1) .
+    modifyTrades (++trades)
+  return trades
 
 
 cancel :: Eq asset => Monad m => Order.Maker asset -> Exchange asset m ()
@@ -136,7 +137,8 @@ deposit amount =
 withdraw :: Monad m => Amount -> Exchange asset m ()
 withdraw amount = do
   bal <- State.gets stateBalance
-  if amount <= bal
-    then State.modify $
+  when (amount > bal) $ do
+    Exception.throwError "withdrawal amount greater than balance" 
+    return ()
+  State.modify $
     modifyBalance (+(-amount))
-  else Exception.throwError "withdrawal amount greater than balance"

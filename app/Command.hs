@@ -78,7 +78,8 @@ readMaker side = do
   return (Order.Maker order)
 
 readP :: Read a => ReadP a
-readP = Read.readS_to_P reads
+readP = 
+  Read.readS_to_P reads
 
 newline :: IO ()
 newline =
