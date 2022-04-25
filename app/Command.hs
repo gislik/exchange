@@ -87,7 +87,7 @@ readAmount = do
     then errorWithoutStackTrace "amount must be non-negative"
     else return (toAmount amount)
 
-readPrice :: ReadP Price
+readPrice :: ReadP (Price asset)
 readPrice = do
   price <- readP 
   if price < 0

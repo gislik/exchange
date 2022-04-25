@@ -22,7 +22,7 @@ data Order base quote =
     , orderSideOf :: Side
     , orderTimeOf :: Time
     , orderAmountOf :: Amount base
-    , orderPriceOf :: Price
+    , orderPriceOf :: Price quote
     , orderStyleOf :: Style
     } 
   deriving (Eq, Typeable)
@@ -65,7 +65,7 @@ isAsk order =
     Ask -> True
     _   -> False
 
-limit :: Side -> Time -> Amount base -> base -> Price -> quote -> Order base quote
+limit :: Side -> Time -> Amount base -> base -> Price quote -> quote -> Order base quote
 limit side time amount base price quote =
   Order {
     orderSideOf   = side
@@ -77,7 +77,7 @@ limit side time amount base price quote =
   , orderStyleOf  = Limit
   }
 
-allOrNothing :: Side -> Time -> Amount base -> base -> Price -> quote -> Order base quote
+allOrNothing :: Side -> Time -> Amount base -> base -> Price quote -> quote -> Order base quote
 allOrNothing side time amount base price quote =
   let 
     order = 
@@ -122,7 +122,7 @@ groupBy :: Eq b => (Maker base quote -> b) -> [Maker base quote] -> [List.NonEmp
 groupBy f orders = 
   NonEmpty.fromList <$> List.groupBy (equalOn f) orders
 
-print :: (Typeable base, Typeable quote, Show base) => Maker base quote -> IO ()
+print :: (Typeable base, Typeable quote, Show base, Show quote) => Maker base quote -> IO ()
 print order = do
   putStr $ show (sideOf order)
   putStr $ " (" ++ show (priceOf order) ++ ")"

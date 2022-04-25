@@ -11,7 +11,7 @@ class GetEntry a base quote where
   baseOf   :: a base quote -> base
   timeOf   :: a base quote -> Time
   amountOf :: a base quote -> Amount base
-  priceOf  :: a base quote -> Price
+  priceOf  :: a base quote -> Price quote
 
 class SetEntry a base quote where
   setAmountOf :: a base quote -> Amount base -> a base quote

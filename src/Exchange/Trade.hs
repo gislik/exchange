@@ -12,7 +12,7 @@ data Trade base quote =
       tradeBaseOf :: base 
     , tradeTimeOf :: Time 
     , tradeAmountOf :: Amount base
-    , tradePriceOf :: Price
+    , tradePriceOf :: Price quote
     }
   deriving (Eq)
 

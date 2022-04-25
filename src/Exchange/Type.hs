@@ -45,34 +45,36 @@ instance (Show asset, Typeable asset) => Show (Amount asset) where
   showsPrec i amount@(Amount d) = 
     let
       asset =
-        (head . drop 1 . words . show $ typeOf amount)
-      go = 
-        showsPrec i d . showChar ' ' .
-        showString asset 
+        head . drop 1 . words . show $ typeOf amount
     in
-      -- if i > 0
-        -- then showParen True go
-        -- else go
-      go
+      showsPrec i d . showChar ' ' . showString asset 
 
 -- Price
-newtype Price = 
+newtype Price asset = 
   Price Double 
-    deriving (Show, Eq, Ord, Num, Read)
+    deriving (Eq, Ord, Num, Read)
 
-toPrice :: Double -> Price
+toPrice :: Double -> Price asset
 toPrice d =
   if d < 0
     then error "Price can only be non-negative"
     else Price d
 
-instance Semigroup Price where
+instance Semigroup (Price asset) where
   Price price1 <> Price price2 =
     Price (price1 + price2)
 
-instance Monoid Price where
+instance Monoid (Price asset) where
   mempty = 
     Price 0
+
+instance (Show asset, Typeable asset) => Show (Price asset) where
+  showsPrec i price@(Price d) = 
+    let
+      asset =
+        head . drop 1 . words . show $ typeOf price
+    in
+      showsPrec i d . showChar ' ' . showString asset 
 
 -- Cost
 newtype Cost =
@@ -87,7 +89,7 @@ instance Monoid Cost where
   mempty = 
     Cost 0
 
-times :: Price -> Amount base -> Amount quote
+times :: Price quote -> Amount base -> Amount quote
 times price amount =
   let
     Price p = price
