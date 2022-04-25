@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFoldable #-}
 module Exchange.Book where 
 
 import qualified Data.List as List
@@ -20,9 +21,9 @@ instance Semigroup (Book base quote) where
 instance Monoid (Book base quote) where
   mempty = Book [] []
 
--- instance Foldable (Book base) where
-  -- foldr f x0 book = 
-    -- foldr f x0 (baseOf <$> bids book ++ asks book)
+instance Foldable (Book base) where
+  foldr f x0 book = 
+    foldr f x0 (quoteOf <$> bids book ++ asks book)
 
 empty :: Book base quote
 empty = 

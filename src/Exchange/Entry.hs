@@ -9,6 +9,7 @@ class (GetEntry a base quote, SetEntry a base quote) => Entry a base quote
 class GetEntry a base quote where
   sideOf   :: a base quote -> Side
   baseOf   :: a base quote -> base
+  quoteOf  :: a base quote -> quote
   timeOf   :: a base quote -> Time
   amountOf :: a base quote -> Amount base
   priceOf  :: a base quote -> Price quote

@@ -10,11 +10,16 @@ import Exchange.Entry
 data Trade base quote =
   Trade {
       tradeBaseOf :: base 
+    , tradeQuoteOf :: quote
     , tradeTimeOf :: Time 
     , tradeAmountOf :: Amount base
     , tradePriceOf :: Price quote
     }
   deriving (Eq)
+
+new :: Time -> Amount base -> base -> Price quote -> quote -> Trade base quote
+new time amount base price quote =
+  Trade base quote time amount price
 
 instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Trade base quote) where
   showsPrec i trade = 
@@ -24,7 +29,7 @@ instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Trade b
         -- showsPrec i (sideOf trade) . showChar ' ' . 
         showsPrec 11 (timeOf trade) . showChar ' ' .
         showsPrec 11 (amountOf trade) . showChar ' ' .
-        showsPrec i (baseOf trade) . showChar ' ' .
+        -- showsPrec i (baseOf trade) . showChar ' ' .
         showString "@ " .
         showsPrec 11 (priceOf trade) 
     in
@@ -36,6 +41,7 @@ instance GetEntry Trade base quote where
   -- sideOf = tradeSideOf
   sideOf   = const Bid -- TODO: hardcoded
   baseOf   = tradeBaseOf
+  quoteOf  = tradeQuoteOf
   timeOf   = tradeTimeOf
   amountOf = tradeAmountOf
   priceOf  = tradePriceOf

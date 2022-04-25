@@ -55,7 +55,7 @@ modifyBalance f state =
 type Error = String
 
 -- Engine
-type Engine base quote  m =
+type Engine base quote m =
   ExceptT Error (StateT (ExchangeState base quote) m)
 
 -- Exchange

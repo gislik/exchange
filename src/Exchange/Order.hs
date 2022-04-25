@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Exchange.Order where 
 
 import qualified Data.List as List
@@ -45,6 +46,7 @@ instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Order b
 instance GetEntry Order base quote where
   sideOf   = orderSideOf
   baseOf   = orderBaseOf
+  quoteOf  = orderQuoteOf
   timeOf   = orderTimeOf
   amountOf = orderAmountOf
   priceOf  = orderPriceOf
@@ -97,6 +99,7 @@ instance (Eq base, Eq quote) => Eq (Maker base quote) where
 instance GetEntry Maker base quote where
   sideOf   (Maker order) = sideOf order
   baseOf  (Maker order)  = baseOf order
+  quoteOf (Maker order)  = quoteOf order
   timeOf   (Maker order) = timeOf order
   amountOf (Maker order) = amountOf order
   priceOf  (Maker order) = priceOf order
@@ -140,11 +143,12 @@ newtype Taker base quote =
   }
 
 instance GetEntry Taker base quote where
-  sideOf   (Taker order) = sideOf order
-  baseOf  (Taker order)  = baseOf order
-  timeOf   (Taker order) = timeOf order
+  sideOf (Taker order)   = sideOf order
+  baseOf (Taker order)   = baseOf order
+  quoteOf (Taker order)  = quoteOf order
+  timeOf (Taker order)   = timeOf order
   amountOf (Taker order) = amountOf order
-  priceOf  (Taker order) = priceOf order
+  priceOf (Taker order)  = priceOf order
 
 instance SetEntry Taker base quote where
   setAmountOf (Taker order) amount = Taker order { orderAmountOf = amount }
@@ -198,10 +202,11 @@ match :: Maker base quote -> Taker base quote -> Maybe (Trade base quote)
 match maker taker = 
   let
     asset  = baseOf taker
+    quote  = quoteOf taker
     time   = timeOf taker
     amount = min (amountOf maker) (amountOf taker)
     price  = priceOf maker
-    trade'  = Trade asset time amount price
+    trade'  = Trade asset quote time amount price
   in
     if isBid taker && isAsk maker && priceOf taker >= priceOf maker && amount > 0
       then Just trade'
