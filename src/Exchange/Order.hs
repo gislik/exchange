@@ -1,7 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-
 module Exchange.Order where 
 
 import qualified Data.List as List
@@ -18,8 +17,9 @@ import Exchange.Type
 -- Order
 data Order base quote = 
   Order {
-      orderSideOf :: Side
-    , orderBaseOf :: base
+      orderBaseOf :: base
+    , orderQuoteOf :: quote
+    , orderSideOf :: Side
     , orderTimeOf :: Time
     , orderAmountOf :: Amount base
     , orderPriceOf :: Price
@@ -65,22 +65,23 @@ isAsk order =
     Ask -> True
     _   -> False
 
-limit :: Side -> base -> Time -> Amount base -> Price -> Order base quote
-limit side base time amount price =
+limit :: Side -> Time -> Amount base -> base -> Price -> quote -> Order base quote
+limit side time amount base price quote =
   Order {
     orderSideOf   = side
   , orderBaseOf   = base
+  , orderQuoteOf  = quote
   , orderTimeOf   = time
   , orderAmountOf = amount
   , orderPriceOf  = price
   , orderStyleOf  = Limit
   }
 
-allOrNothing :: Side -> base -> Time -> Amount base -> Price -> Order base quote
-allOrNothing side asset time amount price =
+allOrNothing :: Side -> Time -> Amount base -> base -> Price -> quote -> Order base quote
+allOrNothing side time amount base price quote =
   let 
     order = 
-      limit side asset time amount price 
+      limit side time amount base price quote
     in
       order { orderStyleOf = AllOrNothing }
 
@@ -121,7 +122,7 @@ groupBy :: Eq b => (Maker base quote -> b) -> [Maker base quote] -> [List.NonEmp
 groupBy f orders = 
   NonEmpty.fromList <$> List.groupBy (equalOn f) orders
 
-print :: (Typeable base, Typeable quote) => Maker base quote -> IO ()
+print :: (Typeable base, Typeable quote, Show base) => Maker base quote -> IO ()
 print order = do
   putStr $ show (sideOf order)
   putStr $ " (" ++ show (priceOf order) ++ ")"

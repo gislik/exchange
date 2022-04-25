@@ -1,6 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-
 module Exchange.Trade where 
 
 import Data.Typeable (Typeable, typeOf)

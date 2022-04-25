@@ -15,6 +15,7 @@ import Control.Monad.IO.Class (liftIO)
 import System.Exit (ExitCode(ExitSuccess), exitSuccess)
 import System.IO (hFlush, stdout)
 import Exchange.Book (Book)
+import Exchange.Asset 
 import Exchange (Exchange)
 import Exchange.Type
 import Command
@@ -36,7 +37,7 @@ handleCommand :: (Show base, Show quote, Typeable base, Eq base, Typeable quote,
   => Command base quote -> Exchange base quote IO ()
 handleCommand command = do
   case command of
-    Book _ -> do
+    Book _ _ -> do
       book <- Exchange.orderbook
       liftIO $ do
         Book.print book
@@ -82,13 +83,13 @@ orderbook :: Book Asset.BTC Asset.USD
 orderbook = 
   foldr Book.newOrder Book.empty
     [
-      Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 50) (toPrice 102))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 2) (toAmount 30) (toPrice 102))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 10) (toPrice 101))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 1) (toAmount 10) (toPrice 101))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 1) (toAmount 10) (toPrice 99))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 2) (toAmount 20) (toPrice 98))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (toAmount 30) (toPrice 97))
+      Order.Maker (Order.limit Ask (Time 3) (toAmount 50) BTC (toPrice 102) USD)
+    , Order.Maker (Order.limit Ask (Time 2) (toAmount 30) BTC (toPrice 102) USD)
+    , Order.Maker (Order.limit Ask (Time 3) (toAmount 10) BTC (toPrice 101) USD)
+    , Order.Maker (Order.limit Ask (Time 1) (toAmount 10) BTC (toPrice 101) USD)
+    , Order.Maker (Order.limit Bid (Time 1) (toAmount 10) BTC (toPrice 99) USD)
+    , Order.Maker (Order.limit Bid (Time 2) (toAmount 20) BTC (toPrice 98) USD)
+    , Order.Maker (Order.limit Bid (Time 3) (toAmount 30) BTC (toPrice 97) USD)
     ]
 
 

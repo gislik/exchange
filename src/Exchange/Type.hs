@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 module Exchange.Type (
   Amount
 , Price
@@ -21,7 +20,7 @@ import Data.Typeable (Typeable, typeOf)
 -- Amount
 newtype Amount asset = 
   Amount Double 
-    deriving (Show, Eq, Ord, Num, Typeable)
+    deriving (Eq, Ord, Num, Typeable)
 
 toAmount :: Double -> Amount asset
 toAmount d =
@@ -41,6 +40,20 @@ instance Semigroup (Amount asset) where
 instance Monoid (Amount asset) where
   mempty = 
     Amount 0.0
+
+instance (Show asset, Typeable asset) => Show (Amount asset) where
+  showsPrec i amount@(Amount d) = 
+    let
+      asset =
+        (head . drop 1 . words . show $ typeOf amount)
+      go = 
+        showsPrec i d . showChar ' ' .
+        showString asset 
+    in
+      -- if i > 0
+        -- then showParen True go
+        -- else go
+      go
 
 -- Price
 newtype Price = 

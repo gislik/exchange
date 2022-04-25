@@ -1,5 +1,4 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-
 module Exchange.Entry where 
 
 import Exchange.Type

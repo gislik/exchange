@@ -10,7 +10,7 @@ import Exchange.Order (Order)
 import Exchange
 
 data Command base quote =
-    Book base
+    Book base quote
   | Order (Order.Taker base quote)
   | Cancel (Order.Maker base quote)
   | Blotter base
@@ -34,7 +34,7 @@ readCommand = do
   str <- map Char.toLower <$> Read.munch1 (Char.isAlphaNum)
   case str of
     "book" ->
-      Book <$> readP 
+      Book <$> readP <*> readP
     "bid" -> 
       Order <$> readTaker Bid
     "ask" -> 
@@ -64,10 +64,11 @@ readOrder side = do
   Read.skipSpaces
   Order.limit 
     <$> pure side 
-    <*> readP
     <*> pure mempty 
     <*> readAmount
+    <*> readP
     <*> readPrice
+    <*> readP
 
 readTaker :: (Read base, Read quote) => Side -> ReadP (Order.Taker base quote)
 readTaker side = do
