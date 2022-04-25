@@ -97,7 +97,7 @@ trade order = do
       Book.trade (setTimeOf order time) book
     cost' =
       foldMap costOf trades
-  when (cost' > (Price 1) `times` bal) $ do
+  when (cost' > (toPrice 1) `times` bal) $ do
     Exception.throwError "cost of trades greater than balance"
     return ()
   State.modify $

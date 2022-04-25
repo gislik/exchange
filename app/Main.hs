@@ -82,13 +82,13 @@ orderbook :: Book Asset.BTC
 orderbook = 
   foldr Book.newOrder Book.empty
     [
-      Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 50) (Price 102))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 2) (toAmount 30) (Price 102))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 10) (Price 101))
-    , Order.Maker (Order.limit Ask Asset.BTC (Time 1) (toAmount 10) (Price 101))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 1) (toAmount 10) (Price 99))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 2) (toAmount 20) (Price 98))
-    , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (toAmount 30) (Price 97))
+      Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 50) (toPrice 102))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 2) (toAmount 30) (toPrice 102))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 3) (toAmount 10) (toPrice 101))
+    , Order.Maker (Order.limit Ask Asset.BTC (Time 1) (toAmount 10) (toPrice 101))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 1) (toAmount 10) (toPrice 99))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 2) (toAmount 20) (toPrice 98))
+    , Order.Maker (Order.limit Bid Asset.BTC (Time 3) (toAmount 30) (toPrice 97))
     ]
 
 

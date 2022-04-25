@@ -2,12 +2,13 @@
 
 module Exchange.Type (
   Amount
-, Price(..)
+, Price
 , Cost(..)
 , Time(..)
 , Side(..)
 , Style(..)
 , toAmount
+, toPrice
 , times
 , readString
 ) where 
@@ -24,9 +25,9 @@ newtype Amount =
 
 toAmount :: Double -> Amount
 toAmount d =
-  if d >= 0
-    then Amount d
-    else error "Amount can only be positive"
+  if d < 0
+    then error "Amount can only be non-negative"
+    else Amount d
 
 instance Read Amount where
   readsPrec _ = 
@@ -45,6 +46,12 @@ instance Monoid Amount where
 newtype Price = 
   Price Double 
     deriving (Show, Eq, Ord, Num, Read)
+
+toPrice :: Double -> Price
+toPrice d =
+  if d < 0
+    then error "Price can only be non-negative"
+    else Price d
 
 instance Semigroup Price where
   Price price1 <> Price price2 =

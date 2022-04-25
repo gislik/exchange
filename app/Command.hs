@@ -30,12 +30,6 @@ instance Read asset => Read (Command asset) where
 
 readCommand :: Read asset => ReadP (Command asset)
 readCommand = do
-  let
-    readAmount = do
-      amount <- readP :: ReadP Double
-      if amount < 0
-        then errorWithoutStackTrace "amount must be non-negative"
-        else return (toAmount amount)
   Read.skipSpaces
   str <- map Char.toLower <$> Read.munch1 (Char.isAlphaNum)
   case str of
@@ -72,8 +66,8 @@ readOrder side = do
     <$> pure side 
     <*> readP
     <*> pure mempty 
-    <*> (toAmount <$> readP) 
-    <*> (Price <$> readP)
+    <*> readAmount
+    <*> readPrice
 
 readTaker :: Read asset => Side -> ReadP (Order.Taker asset)
 readTaker side = do
@@ -84,6 +78,20 @@ readMaker :: Read asset => Side -> ReadP (Order.Maker asset)
 readMaker side = do
   order <- readOrder side
   return (Order.Maker order)
+
+readAmount :: ReadP Amount
+readAmount = do
+  amount <- readP 
+  if amount < 0
+    then errorWithoutStackTrace "amount must be non-negative"
+    else return (toAmount amount)
+
+readPrice :: ReadP Price
+readPrice = do
+  price <- readP 
+  if price < 0
+    then errorWithoutStackTrace "price must be non-negative"
+    else return (toPrice price)
 
 readP :: Read a => ReadP a
 readP = 
