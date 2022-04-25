@@ -5,38 +5,38 @@ module Exchange.Entry where
 import Exchange.Type
 
 -- Entry
-class (GetEntry a asset, SetEntry a asset) => Entry a asset
+class (GetEntry a base quote, SetEntry a base quote) => Entry a base quote
 
-class GetEntry a asset where
-  sideOf   :: a asset -> Side
-  assetOf  :: a asset -> asset
-  timeOf   :: a asset -> Time
-  amountOf :: a asset -> Amount
-  priceOf  :: a asset -> Price
+class GetEntry a base quote where
+  sideOf   :: a base quote -> Side
+  baseOf   :: a base quote -> base
+  timeOf   :: a base quote -> Time
+  amountOf :: a base quote -> Amount base
+  priceOf  :: a base quote -> Price
 
-class SetEntry a asset where
-  setAmountOf :: a asset -> Amount -> a asset
-  setTimeOf :: a asset -> Time -> a asset
+class SetEntry a base quote where
+  setAmountOf :: a base quote -> Amount base -> a base quote
+  setTimeOf :: a base quote -> Time -> a base quote
 
 -- amount
-incAmountOf :: Entry a asset => a asset -> Amount -> a asset
+incAmountOf :: Entry a base quote => a base quote -> Amount base -> a base quote
 incAmountOf entry amount =
   setAmountOf entry (amountOf entry + amount)
 
-decAmountOf :: Entry a asset => a asset -> Amount -> a asset
+decAmountOf :: Entry a base quote => a base quote -> Amount base -> a base quote
 decAmountOf entry amount =
   setAmountOf entry (amountOf entry - amount)
 
 -- time
-incTimeOf :: Entry a asset => a asset -> Time -> a asset
+incTimeOf :: Entry a base quote => a base quote -> Time -> a base quote
 incTimeOf entry time =
   setTimeOf entry (timeOf entry + time)
 
-decTimeOf :: Entry a asset => a asset -> Time -> a asset
+decTimeOf :: Entry a base quote => a base quote -> Time -> a base quote
 decTimeOf entry time =
   setTimeOf entry (timeOf entry - time)
 
 -- cost
-costOf :: GetEntry a asset => a asset -> Cost 
+costOf :: GetEntry a base quote => a base quote -> Amount quote
 costOf entry =
   (priceOf entry) `times` (amountOf entry)

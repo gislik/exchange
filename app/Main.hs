@@ -32,8 +32,8 @@ main = do
       handleCommand command `catchError` (liftIO . putStrLn)
       return ()
 
-handleCommand :: (Show asset, Typeable asset, Eq asset) 
-  => Command asset -> Exchange asset IO ()
+handleCommand :: (Show base, Show quote, Typeable base, Eq base, Typeable quote, Eq quote) 
+  => Command base quote -> Exchange base quote IO ()
 handleCommand command = do
   case command of
     Book _ -> do
@@ -78,7 +78,7 @@ handleCommand command = do
     Exit ->
       liftIO $ exitSuccess
 
-orderbook :: Book Asset.BTC
+orderbook :: Book Asset.BTC Asset.USD
 orderbook = 
   foldr Book.newOrder Book.empty
     [

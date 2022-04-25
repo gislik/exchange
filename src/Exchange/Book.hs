@@ -8,33 +8,33 @@ import Exchange.Trade (Trade)
 import Exchange.Entry
 
 -- Book
-data Book asset = Book {
-    bids :: [Order.Maker asset]
-  , asks :: [Order.Maker asset]
+data Book base quote = Book {
+    bids :: [Order.Maker base quote]
+  , asks :: [Order.Maker base quote]
 } deriving (Show, Typeable, Eq)
 
-instance Semigroup (Book asset) where
+instance Semigroup (Book base quote) where
   Book bids1 asks1 <> Book bids2 asks2 =
     Book (bids1 <> bids2) (asks1 <> asks2)
 
-instance Monoid (Book asset) where
+instance Monoid (Book base quote) where
   mempty = Book [] []
 
-instance Foldable Book where
-  foldr f x0 book = 
-    foldr f x0 (assetOf <$> bids book ++ asks book)
+-- instance Foldable (Book base) where
+  -- foldr f x0 book = 
+    -- foldr f x0 (baseOf <$> bids book ++ asks book)
 
-empty :: Book asset
+empty :: Book base quote
 empty = 
   Book [] []
 
-newOrder :: Order.Maker asset -> Book asset -> Book asset
+newOrder :: Order.Maker base quote -> Book base quote -> Book base quote
 newOrder order book | Order.isBid order = 
   book { bids = List.insertBy (comparing (Down . priceOf)) order (bids book) }
 newOrder order book | otherwise = 
   book { asks = List.insertBy (comparing priceOf) order (asks book) }
 
-trade :: Order.Taker asset -> Book asset -> (Book asset, [Trade asset])
+trade :: Order.Taker base quote -> Book base quote -> (Book base quote, [Trade base quote])
 trade taker book = 
   let
     makers = 
@@ -52,14 +52,14 @@ trade taker book =
   in
     (book', trades')
 
-cancel :: Eq asset => Order.Maker asset -> Book asset -> Book asset
+cancel :: (Eq base, Eq quote) => Order.Maker base quote -> Book base quote -> Book base quote
 cancel maker book =
   book {
     bids = Order.cancel maker (bids book)
   , asks = Order.cancel maker (asks book)
   }
 
-print :: (Show asset, Typeable asset) => Book asset -> IO ()
+print :: (Show base, Show quote, Typeable base, Typeable quote) => Book base quote -> IO ()
 print book = do
   let 
     typeOfBook = show (typeOf book)

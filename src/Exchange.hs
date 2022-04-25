@@ -4,7 +4,7 @@ module Exchange (
   module Exchange
 , module Exchange.Entry
 , module Exchange.Type
-) where 
+) where
 
 import qualified Control.Monad.State.Strict as State
 import qualified Control.Monad.Except as Exception
@@ -20,125 +20,130 @@ import Exchange.Entry
 import Exchange.Type
 
 -- Exchange State
-data ExchangeState asset =
+data ExchangeState base quote =
   ExchangeState
   {
-    stateBookOf :: Book asset
-  , stateTimeOf :: Time
-  , stateTrades :: [Trade asset]
-  , stateBalance  :: Amount
+    stateBookOf  :: Book base quote
+  , stateTimeOf  :: Time
+  , stateTrades  :: [Trade base quote]
+  , stateBalance :: Amount quote
   }
 
-instance Semigroup (ExchangeState asset) where
+instance Semigroup (ExchangeState base quote) where
   ExchangeState book1 time1 trades1 balance1 <> ExchangeState book2 time2 trades2 balance2 =
     ExchangeState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2) (balance1+balance2)
 
-instance Monoid (ExchangeState asset) where
+instance Monoid (ExchangeState base quote) where
   mempty = ExchangeState Book.empty 0 [] 0
 
-modifyBook :: (Book asset -> Book asset) -> ExchangeState asset -> ExchangeState asset
-modifyBook f state = 
+modifyBook :: (Book base quote -> Book base quote) -> ExchangeState base quote -> ExchangeState base quote
+modifyBook f state =
   state { stateBookOf = f (stateBookOf state) }
 
-modifyTime :: (Time -> Time) -> ExchangeState asset -> ExchangeState asset
+modifyTime :: (Time -> Time) -> ExchangeState base quote -> ExchangeState base quote
 modifyTime f state =
   state { stateTimeOf = f (stateTimeOf state) }
 
-modifyTrades :: ([Trade asset] -> [Trade asset]) -> ExchangeState asset -> ExchangeState asset
+modifyTrades :: ([Trade base quote] -> [Trade base quote]) -> ExchangeState base quote -> ExchangeState base quote
 modifyTrades f state =
   state { stateTrades = f (stateTrades state) }
 
-modifyBalance :: (Amount -> Amount) -> ExchangeState asset -> ExchangeState asset
+modifyBalance :: (Amount quote -> Amount quote) -> ExchangeState base quote -> ExchangeState base quote
 modifyBalance f state =
   state { stateBalance = f (stateBalance state) }
 
 type Error = String
 
 -- Engine
-type Engine asset m =
-  ExceptT Error (StateT (ExchangeState asset) m)
+type Engine base quote  m =
+  ExceptT Error (StateT (ExchangeState base quote) m)
 
 -- Exchange
-newtype Exchange asset m a =
-  Exchange (Engine asset m a)
-  deriving 
-    ( 
+newtype Exchange base quote m a =
+  Exchange (Engine base quote m a)
+  deriving
+    (
       Functor
     , Applicative
     , Alternative
     , Monad
     , MonadIO
-    , MonadState (ExchangeState asset)
+    , MonadState (ExchangeState base quote)
     , MonadError Error
     )
 
-runWith :: MonadFail m => Book asset -> Exchange asset m a -> m a
+runWith :: MonadFail m => Book base quote -> Exchange base quote m a -> m a
 runWith book (Exchange engine) = do
-  res <- State.evalStateT (Exception.runExceptT engine) (mempty { stateBookOf = book }) 
+  res <- State.evalStateT (Exception.runExceptT engine) (mempty { stateBookOf = book })
   case res of
     Left err -> fail err
     Right res' -> return res'
 
-run :: MonadFail m => Exchange asset m a -> m a
-run = 
+run :: MonadFail m => Exchange base quote m a -> m a
+run =
   runWith Book.empty
 
-empty :: Monad m => Exchange asset m ()
-empty = 
+empty :: Monad m => Exchange base quote m ()
+empty =
   return ()
 
-trade :: Monad m => Order.Taker asset -> Exchange asset m [Trade asset]
-trade order = do
+trade :: Monad m => Order.Taker base quote -> Exchange base quote m [Trade base quote]
+trade taker = do
   book <- State.gets stateBookOf
   time <- State.gets stateTimeOf
-  bal <- balance
+  bal <- Exchange.balance
   let
-    (book', trades) = 
-      Book.trade (setTimeOf order time) book
-    cost' =
+    (book', trades) =
+      Book.trade (setTimeOf taker time) book
+    cost =
       foldMap costOf trades
-  when (cost' > (toPrice 1) `times` bal) $ do
+    op =
+      if Order.isBid taker
+        then (-)
+        else (+)
+  when (bal `op` cost < 0) $ do
     Exception.throwError "cost of trades greater than balance"
     return ()
   State.modify $
     modifyBook (const book') .
     modifyTime (+1) .
-    modifyTrades (++trades)
+    modifyTrades (++trades) .
+    modifyBalance (`op` cost)
   return trades
 
 
-cancel :: Eq asset => Monad m => Order.Maker asset -> Exchange asset m ()
-cancel maker = 
-  State.modify $ 
+cancel :: (Eq base, Eq quote) => Monad m => Order.Maker base quote -> Exchange base quote m ()
+cancel maker =
+  State.modify $
     modifyBook (Book.cancel maker) .
     modifyTime (+1)
 
-blotter :: Monad m => Exchange asset m [Trade asset]
-blotter = 
+blotter :: Monad m => Exchange base quote m [Trade base quote]
+blotter =
   State.gets stateTrades
 
-orderbook :: Monad m => Exchange asset m (Book asset)
+orderbook :: Monad m => Exchange base quote m (Book base quote)
 orderbook =
   State.gets stateBookOf
 
-clock :: Monad m => Exchange asset m Time
-clock = 
+clock :: Monad m => Exchange base quote m Time
+clock =
   State.gets stateTimeOf
 
-balance :: Monad m => Exchange asset m Amount
+balance :: Monad m => Exchange base quote m (Amount quote)
 balance =
   State.gets stateBalance
 
-deposit :: Monad m => Amount -> Exchange asset m ()
+deposit :: Monad m => Amount quote -> Exchange base quote m ()
 deposit amount =
   State.modify $
-    modifyBalance (+amount)
+    modifyBalance (+ amount)
 
-withdraw :: Monad m => Amount -> Exchange asset m ()
+withdraw :: Monad m => Amount quote -> Exchange base quote m ()
 withdraw amount = do
   bal <- State.gets stateBalance
   when (amount > bal) $ do
-    Exception.throwError "withdrawal amount greater than balance" 
+    Exception.throwError "withdrawal amount greater than balance"
     return ()
   State.modify $
-    modifyBalance (+(-amount))
+    modifyBalance (+ (-amount))

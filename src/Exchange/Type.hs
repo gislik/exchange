@@ -19,26 +19,26 @@ import Text.ParserCombinators.ReadP (ReadP, (+++))
 import Data.Typeable (Typeable, typeOf)
 
 -- Amount
-newtype Amount = 
+newtype Amount asset = 
   Amount Double 
     deriving (Show, Eq, Ord, Num, Typeable)
 
-toAmount :: Double -> Amount
+toAmount :: Double -> Amount asset
 toAmount d =
   if d < 0
     then error "Amount can only be non-negative"
     else Amount d
 
-instance Read Amount where
+instance (Typeable asset) => Read (Amount asset) where
   readsPrec _ = 
     Read.readP_to_S $ do
       readType toAmount
 
-instance Semigroup Amount where
+instance Semigroup (Amount asset) where
   Amount d <> Amount e = 
     Amount (d + e)
   
-instance Monoid Amount where
+instance Monoid (Amount asset) where
   mempty = 
     Amount 0.0
 
@@ -74,14 +74,13 @@ instance Monoid Cost where
   mempty = 
     Cost 0
 
-times :: Price -> Amount -> Cost
+times :: Price -> Amount base -> Amount quote
 times price amount =
   let
     Price p = price
     Amount a = amount
   in
-    Cost (p * a)
-  
+    Amount (p * a)
 
 -- Time
 newtype Time = 

@@ -23,3 +23,12 @@ instance Read BTC where
       readString "BTC" BTC
 
 
+data USD = 
+  USD 
+    deriving (Show, Eq)
+
+instance Read USD where
+  readsPrec _ = 
+    Read.readP_to_S $
+      readString "USD" USD
+

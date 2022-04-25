@@ -9,26 +9,26 @@ import Control.Exception (ErrorCall, Handler(..), handleJust, catches)
 import Exchange.Order (Order)
 import Exchange
 
-data Command asset =
-    Book asset
-  | Order (Order.Taker asset)
-  | Cancel (Order.Maker asset)
-  | Blotter asset
+data Command base quote =
+    Book base
+  | Order (Order.Taker base quote)
+  | Cancel (Order.Maker base quote)
+  | Blotter base
   | Clock
-  | Balance
-  | Deposit Amount
-  | Withdraw Amount
+  | Balance 
+  | Deposit (Amount quote)
+  | Withdraw (Amount quote)
   | ParseError String
   | Unknown 
   | Exit
   deriving (Show)
 
-instance Read asset => Read (Command asset) where
+instance (Read base, Read quote) => Read (Command base quote) where
   readsPrec _ = 
     Read.readP_to_S $
       readCommand
 
-readCommand :: Read asset => ReadP (Command asset)
+readCommand :: (Read base, Read quote) => ReadP (Command base quote)
 readCommand = do
   Read.skipSpaces
   str <- map Char.toLower <$> Read.munch1 (Char.isAlphaNum)
@@ -59,7 +59,7 @@ readCommand = do
     _ ->
       return Unknown 
 
-readOrder :: Read asset => Side -> ReadP (Order asset)
+readOrder :: (Read base, Read quote)  => Side -> ReadP (Order base quote)
 readOrder side = do
   Read.skipSpaces
   Order.limit 
@@ -69,17 +69,17 @@ readOrder side = do
     <*> readAmount
     <*> readPrice
 
-readTaker :: Read asset => Side -> ReadP (Order.Taker asset)
+readTaker :: (Read base, Read quote) => Side -> ReadP (Order.Taker base quote)
 readTaker side = do
   order <- readOrder side
   return (Order.Taker order)
 
-readMaker :: Read asset => Side -> ReadP (Order.Maker asset)
+readMaker :: (Read base, Read quote) => Side -> ReadP (Order.Maker base quote)
 readMaker side = do
   order <- readOrder side
   return (Order.Maker order)
 
-readAmount :: ReadP Amount
+readAmount :: ReadP (Amount asset)
 readAmount = do
   amount <- readP 
   if amount < 0
@@ -101,16 +101,16 @@ newline :: IO ()
 newline =
   putStrLn ""
 
-getCommand :: Read asset => IO (Command asset)
+getCommand :: (Read base, Read quote) => IO (Command base quote)
 getCommand = do
   (handleIOError readLn) `catches` [Handler parseErrorHandler]
 
 
-parseErrorHandler :: ErrorCall -> IO (Command asset)
+parseErrorHandler :: ErrorCall -> IO (Command base quote)
 parseErrorHandler e = do
   return $ ParseError (show e)
 
-handleIOError :: IO (Command asset) -> IO (Command asset)
+handleIOError :: IO (Command base quote) -> IO (Command base quote)
 handleIOError = do
   let
     selector err = 
