@@ -9,26 +9,26 @@ import Control.Exception (ErrorCall, Handler(..), handleJust, catches)
 import Exchange.Order (Order)
 import Exchange
 
-data Command base quote =
-    Book base quote
-  | Order (Order.Taker base quote)
-  | Cancel (Order.Maker base quote)
-  | Blotter base
+data Command a b =
+    Book a b
+  | Order (Order.Taker a b)
+  | Cancel (Order.Maker a b)
+  | Blotter a
   | Clock
   | Balance 
-  | Deposit (Amount quote)
-  | Withdraw (Amount quote)
+  | Deposit (Amount b)
+  | Withdraw (Amount b)
   | ParseError String
   | Unknown 
   | Exit
   deriving (Show)
 
-instance (Read base, Read quote) => Read (Command base quote) where
+instance (Read a, Read b) => Read (Command a b) where
   readsPrec _ = 
     Read.readP_to_S $
       readCommand
 
-readCommand :: (Read base, Read quote) => ReadP (Command base quote)
+readCommand :: (Read a, Read b) => ReadP (Command a b)
 readCommand = do
   Read.skipSpaces
   str <- map Char.toLower <$> Read.munch1 (Char.isAlphaNum)
@@ -59,7 +59,7 @@ readCommand = do
     _ ->
       return Unknown 
 
-readOrder :: (Read base, Read quote)  => Side -> ReadP (Order base quote)
+readOrder :: (Read a, Read b)  => Side -> ReadP (Order a b)
 readOrder side = do
   Read.skipSpaces
   Order.limit 
@@ -70,12 +70,12 @@ readOrder side = do
     <*> readPrice
     <*> readP
 
-readTaker :: (Read base, Read quote) => Side -> ReadP (Order.Taker base quote)
+readTaker :: (Read a, Read b) => Side -> ReadP (Order.Taker a b)
 readTaker side = do
   order <- readOrder side
   return (Order.Taker order)
 
-readMaker :: (Read base, Read quote) => Side -> ReadP (Order.Maker base quote)
+readMaker :: (Read a, Read b) => Side -> ReadP (Order.Maker a b)
 readMaker side = do
   order <- readOrder side
   return (Order.Maker order)
@@ -102,16 +102,16 @@ newline :: IO ()
 newline =
   putStrLn ""
 
-getCommand :: (Read base, Read quote) => IO (Command base quote)
+getCommand :: (Read a, Read b) => IO (Command a b)
 getCommand = do
   (handleIOError readLn) `catches` [Handler parseErrorHandler]
 
 
-parseErrorHandler :: ErrorCall -> IO (Command base quote)
+parseErrorHandler :: ErrorCall -> IO (Command a b)
 parseErrorHandler e = do
   return $ ParseError (show e)
 
-handleIOError :: IO (Command base quote) -> IO (Command base quote)
+handleIOError :: IO (Command a b) -> IO (Command a b)
 handleIOError = do
   let
     selector err = 

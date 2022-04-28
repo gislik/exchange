@@ -20,47 +20,47 @@ import Exchange.Entry
 import Exchange.Type
 
 -- Exchange State
-data ExchangeState base quote =
+data ExchangeState a b =
   ExchangeState
   {
-    stateBookOf  :: Book base quote
+    stateBookOf  :: Book a b
   , stateTimeOf  :: Time
-  , stateTrades  :: [Trade base quote]
-  , stateBalance :: Amount quote
+  , stateTrades  :: [Trade a b]
+  , stateBalance :: Amount b
   }
 
-instance Semigroup (ExchangeState base quote) where
+instance Semigroup (ExchangeState a b) where
   ExchangeState book1 time1 trades1 balance1 <> ExchangeState book2 time2 trades2 balance2 =
     ExchangeState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2) (balance1+balance2)
 
-instance Monoid (ExchangeState base quote) where
+instance Monoid (ExchangeState a b) where
   mempty = ExchangeState Book.empty 0 [] 0
 
-modifyBook :: (Book base quote -> Book base quote) -> ExchangeState base quote -> ExchangeState base quote
+modifyBook :: (Book a b -> Book a b) -> ExchangeState a b -> ExchangeState a b
 modifyBook f state =
   state { stateBookOf = f (stateBookOf state) }
 
-modifyTime :: (Time -> Time) -> ExchangeState base quote -> ExchangeState base quote
+modifyTime :: (Time -> Time) -> ExchangeState a b -> ExchangeState a b
 modifyTime f state =
   state { stateTimeOf = f (stateTimeOf state) }
 
-modifyTrades :: ([Trade base quote] -> [Trade base quote]) -> ExchangeState base quote -> ExchangeState base quote
+modifyTrades :: ([Trade a b] -> [Trade a b]) -> ExchangeState a b -> ExchangeState a b
 modifyTrades f state =
   state { stateTrades = f (stateTrades state) }
 
-modifyBalance :: (Amount quote -> Amount quote) -> ExchangeState base quote -> ExchangeState base quote
+modifyBalance :: (Amount b -> Amount b) -> ExchangeState a b -> ExchangeState a b
 modifyBalance f state =
   state { stateBalance = f (stateBalance state) }
 
 type Error = String
 
 -- Engine
-type Engine base quote m =
-  ExceptT Error (StateT (ExchangeState base quote) m)
+type Engine a b m =
+  ExceptT Error (StateT (ExchangeState a b) m)
 
 -- Exchange
-newtype Exchange base quote m a =
-  Exchange (Engine base quote m a)
+newtype Exchange a b m c =
+  Exchange (Engine a b m c)
   deriving
     (
       Functor
@@ -68,26 +68,26 @@ newtype Exchange base quote m a =
     , Alternative
     , Monad
     , MonadIO
-    , MonadState (ExchangeState base quote)
+    , MonadState (ExchangeState a b)
     , MonadError Error
     )
 
-runWith :: MonadFail m => Book base quote -> Exchange base quote m a -> m a
+runWith :: MonadFail m => Book a b -> Exchange a b m c -> m c
 runWith book (Exchange engine) = do
   res <- State.evalStateT (Exception.runExceptT engine) (mempty { stateBookOf = book })
   case res of
     Left err -> fail err
     Right res' -> return res'
 
-run :: MonadFail m => Exchange base quote m a -> m a
+run :: MonadFail m => Exchange a b m c -> m c
 run =
   runWith Book.empty
 
-empty :: Monad m => Exchange base quote m ()
+empty :: Monad m => Exchange a b m ()
 empty =
   return ()
 
-trade :: Monad m => Order.Taker base quote -> Exchange base quote m [Trade base quote]
+trade :: Monad m => Order.Taker a b -> Exchange a b m [Trade a b]
 trade taker = do
   book <- State.gets stateBookOf
   time <- State.gets stateTimeOf
@@ -112,34 +112,34 @@ trade taker = do
   return trades
 
 
-cancel :: (Eq base, Eq quote) => Monad m => Order.Maker base quote -> Exchange base quote m ()
+cancel :: (Eq a, Eq b) => Monad m => Order.Maker a b -> Exchange a b m ()
 cancel maker =
   State.modify $
     modifyBook (Book.cancel maker) .
     modifyTime (+1)
 
-blotter :: Monad m => Exchange base quote m [Trade base quote]
+blotter :: Monad m => Exchange a b m [Trade a b]
 blotter =
   State.gets stateTrades
 
-orderbook :: Monad m => Exchange base quote m (Book base quote)
+orderbook :: Monad m => Exchange a b m (Book a b)
 orderbook =
   State.gets stateBookOf
 
-clock :: Monad m => Exchange base quote m Time
+clock :: Monad m => Exchange a b m Time
 clock =
   State.gets stateTimeOf
 
-balance :: Monad m => Exchange base quote m (Amount quote)
+balance :: Monad m => Exchange a b m (Amount b)
 balance =
   State.gets stateBalance
 
-deposit :: Monad m => Amount quote -> Exchange base quote m ()
+deposit :: Monad m => Amount b -> Exchange a b m ()
 deposit amount =
   State.modify $
     modifyBalance (+ amount)
 
-withdraw :: Monad m => Amount quote -> Exchange base quote m ()
+withdraw :: Monad m => Amount b -> Exchange a b m ()
 withdraw amount = do
   bal <- State.gets stateBalance
   when (amount > bal) $ do

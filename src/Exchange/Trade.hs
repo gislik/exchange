@@ -7,21 +7,21 @@ import Exchange.Type
 import Exchange.Entry 
 
 -- Trade
-data Trade base quote =
+data Trade a b =
   Trade {
-      tradeBaseOf :: base 
-    , tradeQuoteOf :: quote
+      tradeBaseOf :: a 
+    , tradeQuoteOf :: b
     , tradeTimeOf :: Time 
-    , tradeAmountOf :: Amount base
-    , tradePriceOf :: Price quote
+    , tradeAmountOf :: Amount a
+    , tradePriceOf :: Price b
     }
   deriving (Eq)
 
-new :: Time -> Amount base -> base -> Price quote -> quote -> Trade base quote
+new :: Time -> Amount a -> a -> Price b -> b -> Trade a b
 new time amount base price quote =
   Trade base quote time amount price
 
-instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Trade base quote) where
+instance (Show a, Show b, Typeable a, Typeable b) => Show (Trade a b) where
   showsPrec i trade = 
     let
       go =
@@ -37,7 +37,7 @@ instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Trade b
         then showParen True go
         else go
 
-instance GetEntry Trade base quote where
+instance GetEntry Trade a b where
   -- sideOf = tradeSideOf
   sideOf   = const Bid -- TODO: hardcoded
   baseOf   = tradeBaseOf
@@ -46,7 +46,7 @@ instance GetEntry Trade base quote where
   amountOf = tradeAmountOf
   priceOf  = tradePriceOf
 
-instance SetEntry Trade base quote where
+instance SetEntry Trade a b where
   setAmountOf trade amount = trade { tradeAmountOf = amount }
   setTimeOf trade time     = trade { tradeTimeOf = time }
 

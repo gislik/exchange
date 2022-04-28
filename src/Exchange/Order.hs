@@ -16,19 +16,19 @@ import Exchange.Entry
 import Exchange.Type
 
 -- Order
-data Order base quote = 
+data Order a b = 
   Order {
-      orderBaseOf :: base
-    , orderQuoteOf :: quote
+      orderBaseOf :: a
+    , orderQuoteOf :: b
     , orderSideOf :: Side
     , orderTimeOf :: Time
-    , orderAmountOf :: Amount base
-    , orderPriceOf :: Price quote
+    , orderAmountOf :: Amount a
+    , orderPriceOf :: Price b
     , orderStyleOf :: Style
     } 
   deriving (Eq, Typeable)
 
-instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Order base quote) where
+instance (Show a, Show b, Typeable a, Typeable b) => Show (Order a b) where
   showsPrec i order = 
     let
       go = 
@@ -43,7 +43,7 @@ instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Order b
         then showParen True go
         else go
 
-instance GetEntry Order base quote where
+instance GetEntry Order a b where
   sideOf   = orderSideOf
   baseOf   = orderBaseOf
   quoteOf  = orderQuoteOf
@@ -51,23 +51,23 @@ instance GetEntry Order base quote where
   amountOf = orderAmountOf
   priceOf  = orderPriceOf
 
-instance SetEntry Order base quote where
+instance SetEntry Order a b where
   setAmountOf order amount = order { orderAmountOf = amount }
   setTimeOf order time     = order { orderTimeOf = time }
 
-isBid :: GetEntry a base quote => a base quote -> Bool
+isBid :: GetEntry f a b => f a b -> Bool
 isBid order =
   case sideOf order of
     Bid -> True
     _   -> False
 
-isAsk :: GetEntry a base quote => a base quote -> Bool
+isAsk :: GetEntry f a b => f a b -> Bool
 isAsk order =
   case sideOf order of
     Ask -> True
     _   -> False
 
-limit :: Side -> Time -> Amount base -> base -> Price quote -> quote -> Order base quote
+limit :: Side -> Time -> Amount a -> a -> Price b -> b -> Order a b
 limit side time amount base price quote =
   Order {
     orderSideOf   = side
@@ -79,7 +79,7 @@ limit side time amount base price quote =
   , orderStyleOf  = Limit
   }
 
-allOrNothing :: Side -> Time -> Amount base -> base -> Price quote -> quote -> Order base quote
+allOrNothing :: Side -> Time -> Amount a -> a -> Price b -> b -> Order a b
 allOrNothing side time amount base price quote =
   let 
     order = 
@@ -88,15 +88,15 @@ allOrNothing side time amount base price quote =
       order { orderStyleOf = AllOrNothing }
 
 -- Maker
-newtype Maker base quote = 
-  Maker (Order base quote)
+newtype Maker a b = 
+  Maker (Order a b)
     deriving (Show)
 
-instance (Eq base, Eq quote) => Eq (Maker base quote) where
+instance (Eq a, Eq b) => Eq (Maker a b) where
   Maker order1 == Maker order2 =
     setTimeOf order1 0 == setTimeOf order2 0 -- makers are equal up to their time
 
-instance GetEntry Maker base quote where
+instance GetEntry Maker a b where
   sideOf   (Maker order) = sideOf order
   baseOf  (Maker order)  = baseOf order
   quoteOf (Maker order)  = quoteOf order
@@ -104,13 +104,13 @@ instance GetEntry Maker base quote where
   amountOf (Maker order) = amountOf order
   priceOf  (Maker order) = priceOf order
 
-instance SetEntry Maker base quote where
+instance SetEntry Maker a b where
   setAmountOf (Maker order) amount = Maker order { orderAmountOf = amount }
   setTimeOf (Maker order) time     = Maker order { orderTimeOf = time }
 
-instance Entry Maker base quote
+instance Entry Maker a b
 
-sumAmount :: List.NonEmpty (Maker base quote) -> Maker base quote
+sumAmount :: List.NonEmpty (Maker a b) -> Maker a b
 sumAmount orders = 
   let
     order  = NonEmpty.head orders
@@ -121,28 +121,28 @@ sumAmount orders =
 equalOn :: Eq b => (a -> b) -> a -> a -> Bool
 equalOn f = (==) `on` f
 
-groupBy :: Eq b => (Maker base quote -> b) -> [Maker base quote] -> [List.NonEmpty (Maker base quote)]
+groupBy :: Eq c => (Maker a b -> c) -> [Maker a b] -> [List.NonEmpty (Maker a b)]
 groupBy f orders = 
   NonEmpty.fromList <$> List.groupBy (equalOn f) orders
 
-print :: (Typeable base, Typeable quote, Show base, Show quote) => Maker base quote -> IO ()
+print :: (Typeable a, Typeable b, Show a, Show b) => Maker a b -> IO ()
 print order = do
   putStr $ show (sideOf order)
   putStr $ " (" ++ show (priceOf order) ++ ")"
   putStr $ " (" ++ show (amountOf order) ++ ")"
   putStrLn ""
 
-splitSides :: [Maker base quote] -> ([Maker base quote], [Maker base quote])
+splitSides :: [Maker a b] -> ([Maker a b], [Maker a b])
 splitSides makers = 
   List.partition isBid makers
 
 -- Taker
-newtype Taker base quote = 
+newtype Taker a b = 
   Taker {
-    getTakerOrder :: Order base quote
+    getTakerOrder :: Order a b
   }
 
-instance GetEntry Taker base quote where
+instance GetEntry Taker a b where
   sideOf (Taker order)   = sideOf order
   baseOf (Taker order)   = baseOf order
   quoteOf (Taker order)  = quoteOf order
@@ -150,13 +150,13 @@ instance GetEntry Taker base quote where
   amountOf (Taker order) = amountOf order
   priceOf (Taker order)  = priceOf order
 
-instance SetEntry Taker base quote where
+instance SetEntry Taker a b where
   setAmountOf (Taker order) amount = Taker order { orderAmountOf = amount }
   setTimeOf (Taker order) time     = Taker order { orderTimeOf = time }
 
-instance Entry Taker base quote where
+instance Entry Taker a b where
 
-instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Taker base quote) where
+instance (Show a, Show b, Typeable a, Typeable b) => Show (Taker a b) where
   showsPrec i taker@(Taker order) = 
     let
       go = 
@@ -169,18 +169,18 @@ instance (Show base, Show quote, Typeable base, Typeable quote) => Show (Taker b
 
 -- Makers and Takers
 
-type EngineState base quote = 
-  ([Maker base quote], [Trade base quote], Amount base)
+type EngineState a b = 
+  ([Maker a b], [Trade a b], Amount a)
 
-accAmount :: EngineState base quote -> Amount base
+accAmount :: EngineState a b -> Amount a
 accAmount state = 
   case state of
     (_, _, amount) -> amount
     
-toMaker :: Taker base quote -> Maker base quote
+toMaker :: Taker a b -> Maker a b
 toMaker taker = Maker (getTakerOrder taker)
 
-engine_ :: Maybe (Trade base quote) -> Maker base quote -> EngineState base quote -> EngineState base quote
+engine_ :: Maybe (Trade a b) -> Maker a b -> EngineState a b -> EngineState a b
 engine_ mtrade maker (makers', trades', amount') =
   let
     decAmountBy maker' trade' = 
@@ -198,7 +198,7 @@ engine_ mtrade maker (makers', trades', amount') =
       Nothing | otherwise -> 
         (maker:makers', trades', amount')
 
-match :: Maker base quote -> Taker base quote -> Maybe (Trade base quote)
+match :: Maker a b -> Taker a b -> Maybe (Trade a b)
 match maker taker = 
   let
     asset  = baseOf taker
@@ -215,7 +215,7 @@ match maker taker =
     else 
       Nothing
 
-trade :: Taker base quote -> [Maker base quote] -> ([Maker base quote], [Trade base quote])
+trade :: Taker a b -> [Maker a b] -> ([Maker a b], [Trade a b])
 trade taker makers = 
   let
     order = 
@@ -234,7 +234,7 @@ trade taker makers =
         _ ->
           (makers', trades')
 
-cancel :: (Eq base, Eq quote) => Maker base quote -> [Maker base quote] -> [Maker base quote]
+cancel :: (Eq a, Eq b) => Maker a b -> [Maker a b] -> [Maker a b]
 cancel maker makers = 
   filter (/= maker) makers
     

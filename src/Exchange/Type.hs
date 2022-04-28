@@ -89,7 +89,7 @@ instance Monoid Cost where
   mempty = 
     Cost 0
 
-times :: Price quote -> Amount base -> Amount quote
+times :: Price b -> Amount a -> Amount b
 times price amount =
   let
     Price p = price

@@ -33,8 +33,8 @@ main = do
       handleCommand command `catchError` (liftIO . putStrLn)
       return ()
 
-handleCommand :: (Show base, Show quote, Typeable base, Eq base, Typeable quote, Eq quote) 
-  => Command base quote -> Exchange base quote IO ()
+handleCommand :: (Show a, Show b, Typeable a, Eq a, Typeable b, Eq b) 
+  => Command a b -> Exchange a b IO ()
 handleCommand command = do
   case command of
     Book _ _ -> do
