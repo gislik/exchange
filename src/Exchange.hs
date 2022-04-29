@@ -19,9 +19,9 @@ import Exchange.Book (Book)
 import Exchange.Entry
 import Exchange.Type
 
--- Exchange State
-data ExchangeState a b =
-  ExchangeState
+-- Engine State
+data EngineState a b =
+  EngineState
   {
     stateBookOf  :: Book a b
   , stateTimeOf  :: Time
@@ -29,26 +29,26 @@ data ExchangeState a b =
   , stateBalance :: Amount b
   }
 
-instance Semigroup (ExchangeState a b) where
-  ExchangeState book1 time1 trades1 balance1 <> ExchangeState book2 time2 trades2 balance2 =
-    ExchangeState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2) (balance1+balance2)
+instance Semigroup (EngineState a b) where
+  EngineState book1 time1 trades1 balance1 <> EngineState book2 time2 trades2 balance2 =
+    EngineState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2) (balance1+balance2)
 
-instance Monoid (ExchangeState a b) where
-  mempty = ExchangeState Book.empty 0 [] 0
+instance Monoid (EngineState a b) where
+  mempty = EngineState Book.empty 0 [] 0
 
-modifyBook :: (Book a b -> Book a b) -> ExchangeState a b -> ExchangeState a b
+modifyBook :: (Book a b -> Book a b) -> EngineState a b -> EngineState a b
 modifyBook f state =
   state { stateBookOf = f (stateBookOf state) }
 
-modifyTime :: (Time -> Time) -> ExchangeState a b -> ExchangeState a b
+modifyTime :: (Time -> Time) -> EngineState a b -> EngineState a b
 modifyTime f state =
   state { stateTimeOf = f (stateTimeOf state) }
 
-modifyTrades :: ([Trade a b] -> [Trade a b]) -> ExchangeState a b -> ExchangeState a b
+modifyTrades :: ([Trade a b] -> [Trade a b]) -> EngineState a b -> EngineState a b
 modifyTrades f state =
   state { stateTrades = f (stateTrades state) }
 
-modifyBalance :: (Amount b -> Amount b) -> ExchangeState a b -> ExchangeState a b
+modifyBalance :: (Amount b -> Amount b) -> EngineState a b -> EngineState a b
 modifyBalance f state =
   state { stateBalance = f (stateBalance state) }
 
@@ -56,7 +56,7 @@ type Error = String
 
 -- Engine
 type Engine a b m =
-  ExceptT Error (StateT (ExchangeState a b) m)
+  ExceptT Error (StateT (EngineState a b) m)
 
 -- Exchange
 newtype Exchange a b m c =
@@ -68,7 +68,7 @@ newtype Exchange a b m c =
     , Alternative
     , Monad
     , MonadIO
-    , MonadState (ExchangeState a b)
+    , MonadState (EngineState a b)
     , MonadError Error
     )
 
