@@ -74,6 +74,7 @@ data EngineState a b =
 
 Finally the exchange embeds the engine and exposes a monad interface.
 
+~~~haskell
 -- Exchange
 newtype Exchange a b m c =
   Exchange (Engine a b m c)
@@ -87,4 +88,4 @@ newtype Exchange a b m c =
     , MonadState (EngineState a b)
     , MonadError Error
     )
-
+~~~
