@@ -1,12 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
-module Exchange
-  ( module Exchange,
-    module Exchange.Entry,
-    module Exchange.Type,
-  )
-where
+module Exchange (
+  module Exchange,
+  module Exchange.Entry,
+  module Exchange.Type,
+) where
 
 import Control.Applicative (Alternative)
 import Control.Monad (when)
@@ -23,10 +22,10 @@ import Exchange.Type
 
 -- Engine State
 data EngineState a b = EngineState
-  { stateBookOf :: Book a b,
-    stateTimeOf :: Time,
-    stateTrades :: [Trade a b],
-    stateBalance :: Amount b
+  { stateBookOf :: Book a b
+  , stateTimeOf :: Time
+  , stateTrades :: [Trade a b]
+  , stateBalance :: Amount b
   }
 
 instance Semigroup (EngineState a b) where
@@ -64,13 +63,13 @@ type Engine a b m =
 newtype Exchange a b m c
   = Exchange (Engine a b m c)
   deriving
-    ( Functor,
-      Applicative,
-      Alternative,
-      Monad,
-      MonadIO,
-      MonadState (EngineState a b),
-      MonadError Error
+    ( Functor
+    , Applicative
+    , Alternative
+    , Monad
+    , MonadIO
+    , MonadState (EngineState a b)
+    , MonadError Error
     )
 
 runWith :: MonadFail m => Book a b -> Exchange a b m c -> m c

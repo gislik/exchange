@@ -8,13 +8,13 @@ The trade intent is expressed in an order. Orders are either bid (buy) orders or
 
 ~~~haskell
 data Order a b = Order
-  { orderBaseOf :: a,
-    orderQuoteOf :: b,
-    orderSideOf :: Side,
-    orderTimeOf :: Time,
-    orderAmountOf :: Amount a,
-    orderPriceOf :: Price b,
-    orderStyleOf :: Style
+  { orderBaseOf :: a
+  , orderQuoteOf :: b
+  , orderSideOf :: Side
+  , orderTimeOf :: Time
+  , orderAmountOf :: Amount a
+  , orderPriceOf :: Price b
+  , orderStyleOf :: Style
   }
   deriving (Eq, Typeable)
 ~~~
@@ -30,8 +30,8 @@ Orders are managed by an order book. The order book is essentially a list of all
 
 ~~~haskell
 data Book a b = Book
-  { bids :: [Order.Maker a b],
-    asks :: [Order.Maker a b]
+  { bids :: [Order.Maker a b]
+  , asks :: [Order.Maker a b]
   }
   deriving (Show, Typeable, Eq)
 ~~~
@@ -42,13 +42,14 @@ Two orders of the opposite site which match in price result in a trade.
 
 ~~~haskell
 data Trade a b = Trade
-  { tradeBaseOf :: a,
-    tradeQuoteOf :: b,
-    tradeTimeOf :: Time,
-    tradeAmountOf :: Amount a,
-    tradePriceOf :: Price b
+  { tradeBaseOf :: a
+  , tradeQuoteOf :: b
+  , tradeTimeOf :: Time
+  , tradeAmountOf :: Amount a
+  , tradePriceOf :: Price b
   }
   deriving (Eq)
+
 ~~~
 
 ## Engine
@@ -68,12 +69,12 @@ Finally the exchange embeds the engine and exposes a monad interface.
 newtype Exchange a b m c
   = Exchange (Engine a b m c)
   deriving
-    ( Functor,
-      Applicative,
-      Alternative,
-      Monad,
-      MonadIO,
-      MonadState (EngineState a b),
-      MonadError Error
+    ( Functor
+    , Applicative
+    , Alternative
+    , Monad
+    , MonadIO
+    , MonadState (EngineState a b)
+    , MonadError Error
     )
 ~~~

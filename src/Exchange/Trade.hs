@@ -9,11 +9,11 @@ import Exchange.Type
 
 -- Trade
 data Trade a b = Trade
-  { tradeBaseOf :: a,
-    tradeQuoteOf :: b,
-    tradeTimeOf :: Time,
-    tradeAmountOf :: Amount a,
-    tradePriceOf :: Price b
+  { tradeBaseOf :: a
+  , tradeQuoteOf :: b
+  , tradeTimeOf :: Time
+  , tradeAmountOf :: Amount a
+  , tradePriceOf :: Price b
   }
   deriving (Eq)
 

@@ -1,18 +1,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Exchange.Type
-  ( Amount,
-    Price,
-    Cost (..),
-    Time (..),
-    Side (..),
-    Style (..),
-    toAmount,
-    toPrice,
-    times,
-    readString,
-  )
-where
+module Exchange.Type (
+  Amount,
+  Price,
+  Cost (..),
+  Time (..),
+  Side (..),
+  Style (..),
+  toAmount,
+  toPrice,
+  times,
+  readString,
+) where
 
 import qualified Data.Char as Char
 import Data.Typeable (Typeable, typeOf)

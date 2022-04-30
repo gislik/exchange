@@ -64,19 +64,21 @@ main = hspec $ do
 
   describe "Order" $ do
     let makers =
-          [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD),
-            Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD),
-            Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 22) USD),
-            Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
+          [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD)
+          , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD)
+          , Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 22) USD)
+          , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
           ]
 
     it "should have split makers, i.e. bids and asks, to the correct sides" $ do
       Order.splitSides makers
-        `shouldBe` ( [ Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD),
-                       Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
-                     ],
-                     [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD),
-                       Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 22) USD)
+        `shouldBe` (
+                     [ Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD)
+                     , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
+                     ]
+                   ,
+                     [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD)
+                     , Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 22) USD)
                      ]
                    )
 
@@ -86,9 +88,9 @@ main = hspec $ do
               Order.Maker (Order.limit Ask (Time 5) (toAmount 0) BTC (toPrice 22) USD)
 
         Order.cancel maker makers
-          `shouldBe` [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD),
-                       Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD),
-                       Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
+          `shouldBe` [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD)
+                     , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD)
+                     , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
                      ]
 
       it "should not be removed if not matched" $ do
@@ -96,10 +98,10 @@ main = hspec $ do
               Order.Maker (Order.limit Ask (Time 5) (toAmount 100) BTC (toPrice 22) USD)
 
         Order.cancel maker makers
-          `shouldBe` [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD),
-                       Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD),
-                       Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 22) USD),
-                       Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
+          `shouldBe` [ Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 20) USD)
+                     , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 10) USD)
+                     , Order.Maker (Order.limit Ask (Time 0) (toAmount 0) BTC (toPrice 22) USD)
+                     , Order.Maker (Order.limit Bid (Time 0) (toAmount 0) BTC (toPrice 12) USD)
                      ]
 
   describe "Order {Limit}" $ do
@@ -187,8 +189,8 @@ main = hspec $ do
           taker4 =
             taker3
           trades =
-            [ Trade.new (Time 6) (toAmount 2) BTC (toPrice 15) USD,
-              Trade.new (Time 6) (toAmount 3) BTC (toPrice 15) USD
+            [ Trade.new (Time 6) (toAmount 2) BTC (toPrice 15) USD
+            , Trade.new (Time 6) (toAmount 3) BTC (toPrice 15) USD
             ]
           maker5 =
             Order.Maker (Order.limit Bid (Time 1) (toAmount 2) BTC (toPrice 15) USD)
@@ -250,8 +252,8 @@ main = hspec $ do
           taker3 =
             Order.Taker (Order.limit Bid (Time 0) (toAmount 10) BTC (toPrice 20) USD)
           trades =
-            [ Trade.new (Time 0) (toAmount 2) BTC (toPrice 10) USD,
-              Trade.new (Time 0) (toAmount 8) BTC (toPrice 15) USD
+            [ Trade.new (Time 0) (toAmount 2) BTC (toPrice 10) USD
+            , Trade.new (Time 0) (toAmount 8) BTC (toPrice 15) USD
             ]
 
       it "should match" $ do
@@ -328,8 +330,8 @@ main = hspec $ do
           trade3 =
             Trade.new (Time 6) (toAmount 4) BTC (toPrice 15) USD
           trades =
-            [ Trade.new (Time 6) (toAmount 2) BTC (toPrice 15) USD,
-              Trade.new (Time 6) (toAmount 3) BTC (toPrice 15) USD
+            [ Trade.new (Time 6) (toAmount 2) BTC (toPrice 15) USD
+            , Trade.new (Time 6) (toAmount 3) BTC (toPrice 15) USD
             ]
 
       it "should result in trades" $ do
@@ -363,8 +365,8 @@ main = hspec $ do
             foldr
               Book.newOrder
               Book.empty
-              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD),
-                Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
+              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+              , Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
               ]
           bid =
             Order.Taker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 15) USD)
@@ -380,8 +382,8 @@ main = hspec $ do
               Book.asks book'
 
         bids
-          `shouldBe` [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 15) USD),
-                       Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+          `shouldBe` [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 15) USD)
+                     , Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
                      ]
 
   describe "Exchange" $ do
@@ -432,8 +434,8 @@ main = hspec $ do
             foldr
               Book.newOrder
               Book.empty
-              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD),
-                Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
+              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+              , Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
               ]
 
       it "should have a book with two entries" $ do
@@ -445,8 +447,8 @@ main = hspec $ do
             foldr
               Book.newOrder
               Book.empty
-              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD),
-                Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
+              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+              , Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
               ]
 
       it "should result in an error" $ do
@@ -460,8 +462,8 @@ main = hspec $ do
             foldr
               Book.newOrder
               Book.empty
-              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD),
-                Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
+              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+              , Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
               ]
 
       it "should have a book with a single entry left" $ do
@@ -516,8 +518,8 @@ main = hspec $ do
             foldr
               Book.newOrder
               Book.empty
-              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD),
-                Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
+              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+              , Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
               ]
 
       it "should place the rest of the order on the correct side" $ do
@@ -544,8 +546,8 @@ main = hspec $ do
             foldr
               Book.newOrder
               Book.empty
-              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD),
-                Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
+              [ Order.Maker (Order.limit Bid (Time 0) (toAmount 2) BTC (toPrice 10) USD)
+              , Order.Maker (Order.limit Ask (Time 0) (toAmount 2) BTC (toPrice 20) USD)
               ]
 
       it "should be removed" $ do

@@ -86,13 +86,13 @@ orderbook =
   foldr
     Book.newOrder
     Book.empty
-    [ Order.Maker (Order.limit Ask (Time 3) (toAmount 50) BTC (toPrice 102) USD),
-      Order.Maker (Order.limit Ask (Time 2) (toAmount 30) BTC (toPrice 102) USD),
-      Order.Maker (Order.limit Ask (Time 3) (toAmount 10) BTC (toPrice 101) USD),
-      Order.Maker (Order.limit Ask (Time 1) (toAmount 10) BTC (toPrice 101) USD),
-      Order.Maker (Order.limit Bid (Time 1) (toAmount 10) BTC (toPrice 99) USD),
-      Order.Maker (Order.limit Bid (Time 2) (toAmount 20) BTC (toPrice 98) USD),
-      Order.Maker (Order.limit Bid (Time 3) (toAmount 30) BTC (toPrice 97) USD)
+    [ Order.Maker (Order.limit Ask (Time 3) (toAmount 50) BTC (toPrice 102) USD)
+    , Order.Maker (Order.limit Ask (Time 2) (toAmount 30) BTC (toPrice 102) USD)
+    , Order.Maker (Order.limit Ask (Time 3) (toAmount 10) BTC (toPrice 101) USD)
+    , Order.Maker (Order.limit Ask (Time 1) (toAmount 10) BTC (toPrice 101) USD)
+    , Order.Maker (Order.limit Bid (Time 1) (toAmount 10) BTC (toPrice 99) USD)
+    , Order.Maker (Order.limit Bid (Time 2) (toAmount 20) BTC (toPrice 98) USD)
+    , Order.Maker (Order.limit Bid (Time 3) (toAmount 30) BTC (toPrice 97) USD)
     ]
 
 --- signals

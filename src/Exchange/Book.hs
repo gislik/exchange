@@ -11,8 +11,8 @@ import Exchange.Trade (Trade)
 
 -- Book
 data Book a b = Book
-  { bids :: [Order.Maker a b],
-    asks :: [Order.Maker a b]
+  { bids :: [Order.Maker a b]
+  , asks :: [Order.Maker a b]
   }
   deriving (Show, Typeable, Eq)
 
@@ -58,8 +58,8 @@ trade taker book =
 cancel :: (Eq a, Eq b) => Order.Maker a b -> Book a b -> Book a b
 cancel maker book =
   book
-    { bids = Order.remove maker (bids book),
-      asks = Order.remove maker (asks book)
+    { bids = Order.remove maker (bids book)
+    , asks = Order.remove maker (asks book)
     }
 
 print :: (Show a, Show b, Typeable a, Typeable b) => Book a b -> IO ()

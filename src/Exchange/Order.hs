@@ -18,13 +18,13 @@ import Exchange.Type
 
 -- Order
 data Order a b = Order
-  { orderBaseOf :: a,
-    orderQuoteOf :: b,
-    orderSideOf :: Side,
-    orderTimeOf :: Time,
-    orderAmountOf :: Amount a,
-    orderPriceOf :: Price b,
-    orderStyleOf :: Style
+  { orderBaseOf :: a
+  , orderQuoteOf :: b
+  , orderSideOf :: Side
+  , orderTimeOf :: Time
+  , orderAmountOf :: Amount a
+  , orderPriceOf :: Price b
+  , orderStyleOf :: Style
   }
   deriving (Eq, Typeable)
 
@@ -72,13 +72,13 @@ isAsk order =
 limit :: Side -> Time -> Amount a -> a -> Price b -> b -> Order a b
 limit side time amount base price quote =
   Order
-    { orderSideOf = side,
-      orderBaseOf = base,
-      orderQuoteOf = quote,
-      orderTimeOf = time,
-      orderAmountOf = amount,
-      orderPriceOf = price,
-      orderStyleOf = Limit
+    { orderSideOf = side
+    , orderBaseOf = base
+    , orderQuoteOf = quote
+    , orderTimeOf = time
+    , orderAmountOf = amount
+    , orderPriceOf = price
+    , orderStyleOf = Limit
     }
 
 allOrNothing :: Side -> Time -> Amount a -> a -> Price b -> b -> Order a b
