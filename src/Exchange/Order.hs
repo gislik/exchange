@@ -18,15 +18,15 @@ import Exchange.Type
 -- Order
 data Order a b = 
   Order {
-      orderBaseOf :: a
-    , orderQuoteOf :: b
-    , orderSideOf :: Side
-    , orderTimeOf :: Time
-    , orderAmountOf :: Amount a
-    , orderPriceOf :: Price b
-    , orderStyleOf :: Style
-    } 
-  deriving (Eq, Typeable)
+    orderBaseOf :: a
+  , orderQuoteOf :: b
+  , orderSideOf :: Side
+  , orderTimeOf :: Time
+  , orderAmountOf :: Amount a
+  , orderPriceOf :: Price b
+  , orderStyleOf :: Style
+  } 
+    deriving (Eq, Typeable)
 
 instance (Show a, Show b, Typeable a, Typeable b) => Show (Order a b) where
   showsPrec i order = 
@@ -178,7 +178,8 @@ accAmount state =
     (_, _, amount) -> amount
     
 toMaker :: Taker a b -> Maker a b
-toMaker taker = Maker (getTakerOrder taker)
+toMaker taker = 
+  Maker (getTakerOrder taker)
 
 engine_ :: Maybe (Trade a b) -> Maker a b -> EngineState a b -> EngineState a b
 engine_ mtrade maker (makers', trades', amount') =

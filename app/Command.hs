@@ -21,7 +21,7 @@ data Command a b =
   | ParseError String
   | Unknown 
   | Exit
-  deriving (Show)
+    deriving (Show)
 
 instance (Read a, Read b) => Read (Command a b) where
   readsPrec _ = 
@@ -119,5 +119,4 @@ handleIOError = do
         then Just Exit
         else Just (ParseError "command parse error") -- parse errors while readLn happen in io
   handleJust selector return
-
 

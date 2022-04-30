@@ -108,6 +108,7 @@ instance Semigroup Time where
 
 instance Monoid Time where
   mempty = Time 0
+
 -- Style
 data Style =
     Limit
@@ -117,7 +118,7 @@ data Style =
 data Side =
     Bid 
   | Ask
-  deriving (Show, Eq)
+    deriving (Show, Eq)
 
 instance Read Side where
   readsPrec _ = 

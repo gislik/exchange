@@ -9,10 +9,12 @@ import Exchange.Trade (Trade)
 import Exchange.Entry
 
 -- Book
-data Book a b = Book {
+data Book a b = 
+  Book {
     bids :: [Order.Maker a b]
   , asks :: [Order.Maker a b]
-} deriving (Show, Typeable, Eq)
+  } 
+    deriving (Show, Typeable, Eq)
 
 instance Semigroup (Book a b) where
   Book bids1 asks1 <> Book bids2 asks2 =

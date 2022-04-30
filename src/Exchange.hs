@@ -34,7 +34,8 @@ instance Semigroup (EngineState a b) where
     EngineState (book1 <> book2) (time1 <> time2) (trades1 ++ trades2) (balance1+balance2)
 
 instance Monoid (EngineState a b) where
-  mempty = EngineState Book.empty 0 [] 0
+  mempty = 
+    EngineState Book.empty 0 [] 0
 
 modifyBook :: (Book a b -> Book a b) -> EngineState a b -> EngineState a b
 modifyBook f state =
@@ -52,7 +53,8 @@ modifyBalance :: (Amount b -> Amount b) -> EngineState a b -> EngineState a b
 modifyBalance f state =
   state { stateBalance = f (stateBalance state) }
 
-type Error = String
+type Error = 
+  String
 
 -- Engine
 type Engine a b m =
@@ -61,7 +63,7 @@ type Engine a b m =
 -- Exchange
 newtype Exchange a b m c =
   Exchange (Engine a b m c)
-  deriving
+    deriving
     (
       Functor
     , Applicative
@@ -110,7 +112,6 @@ trade taker = do
     modifyTrades (++trades) .
     modifyBalance (`op` cost)
   return trades
-
 
 cancel :: (Eq a, Eq b) => Monad m => Order.Maker a b -> Exchange a b m ()
 cancel maker =

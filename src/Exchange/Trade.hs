@@ -9,13 +9,13 @@ import Exchange.Entry
 -- Trade
 data Trade a b =
   Trade {
-      tradeBaseOf :: a 
-    , tradeQuoteOf :: b
-    , tradeTimeOf :: Time 
-    , tradeAmountOf :: Amount a
-    , tradePriceOf :: Price b
-    }
-  deriving (Eq)
+    tradeBaseOf :: a 
+  , tradeQuoteOf :: b
+  , tradeTimeOf :: Time 
+  , tradeAmountOf :: Amount a
+  , tradePriceOf :: Price b
+  } 
+    deriving (Eq)
 
 new :: Time -> Amount a -> a -> Price b -> b -> Trade a b
 new time amount base price quote =
