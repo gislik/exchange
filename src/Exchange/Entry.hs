@@ -1,18 +1,21 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Exchange.Entry where 
+
+module Exchange.Entry where
 
 import Exchange.Type
 
 -- Entry
-class (GetEntry f a b, SetEntry f a b) => Entry f a b
+class
+  (GetEntry f a b, SetEntry f a b) =>
+  Entry f a b
 
 class GetEntry f a b where
-  sideOf   :: f a b -> Side
-  baseOf   :: f a b -> a
-  quoteOf  :: f a b -> b
-  timeOf   :: f a b -> Time
+  sideOf :: f a b -> Side
+  baseOf :: f a b -> a
+  quoteOf :: f a b -> b
+  timeOf :: f a b -> Time
   amountOf :: f a b -> Amount a
-  priceOf  :: f a b -> Price b
+  priceOf :: f a b -> Price b
 
 class SetEntry f a b where
   setAmountOf :: f a b -> Amount a -> f a b
