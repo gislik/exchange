@@ -56,8 +56,8 @@ trade taker book =
 cancel :: (Eq a, Eq b) => Order.Maker a b -> Book a b -> Book a b
 cancel maker book =
   book {
-    bids = Order.cancel maker (bids book)
-  , asks = Order.cancel maker (asks book)
+    bids = Order.remove maker (bids book)
+  , asks = Order.remove maker (asks book)
   }
 
 print :: (Show a, Show b, Typeable a, Typeable b) => Book a b -> IO ()

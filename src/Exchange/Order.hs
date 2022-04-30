@@ -234,7 +234,7 @@ trade taker makers =
         _ ->
           (makers', trades')
 
-cancel :: (Eq a, Eq b) => Maker a b -> [Maker a b] -> [Maker a b]
-cancel maker makers = 
+remove :: (Eq a, Eq b) => Maker a b -> [Maker a b] -> [Maker a b]
+remove maker makers = 
   filter (/= maker) makers
     
